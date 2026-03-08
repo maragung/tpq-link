@@ -1,8 +1,11 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
+import '../../providers/auth_provider.dart';
 import '../../services/api_service.dart';
 import '../../utils/constants.dart';
 import '../../utils/helpers.dart';
 import '../../widgets/pin_dialog.dart';
+import '../../widgets/skeleton_loader.dart';
 
 class PengeluaranScreen extends StatefulWidget {
   const PengeluaranScreen({super.key});
@@ -120,10 +123,17 @@ class _PengeluaranScreenState extends State<PengeluaranScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final canManage =
+        Provider.of<AuthProvider>(context).user?.isFullAccess ?? false;
     return Scaffold(
       appBar: AppBar(title: const Text('Pengeluaran')),
       body: _loading
-          ? const Center(child: CircularProgressIndicator())
+          ? const Column(
+              children: [
+                SkeletonSummaryCard(),
+                Expanded(child: SkeletonList(count: 5)),
+              ],
+            )
           : RefreshIndicator(
               onRefresh: _fetch,
               child: Column(
@@ -195,11 +205,13 @@ class _PengeluaranScreenState extends State<PengeluaranScreen> {
                 ],
               ),
             ),
-      floatingActionButton: FloatingActionButton(
-        onPressed: _showAddDialog,
-        backgroundColor: AppColors.danger,
-        child: const Icon(Icons.add),
-      ),
+      floatingActionButton: canManage
+          ? FloatingActionButton(
+              onPressed: _showAddDialog,
+              backgroundColor: AppColors.danger,
+              child: const Icon(Icons.add),
+            )
+          : null,
     );
   }
 }

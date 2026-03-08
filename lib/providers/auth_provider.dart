@@ -1,8 +1,10 @@
+import 'dart:async';
 import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import '../models/user.dart';
 import '../services/api_service.dart';
+import '../services/biometric_service.dart';
 import '../utils/constants.dart';
 
 class AuthProvider extends ChangeNotifier {
@@ -11,6 +13,7 @@ class AuthProvider extends ChangeNotifier {
   bool _loading = false;
   String? _error;
   bool _initialized = false;
+  StreamSubscription<void>? _unauthorizedSub;
 
   User? get user => _user;
   String? get token => _token;
@@ -23,6 +26,19 @@ class AuthProvider extends ChangeNotifier {
 
   AuthProvider() {
     _init();
+    // Auto-logout and notify when server returns 401
+    _unauthorizedSub = ApiService.onUnauthorized.listen((_) async {
+      if (_token != null) {
+        await _clearAuth();
+        notifyListeners();
+      }
+    });
+  }
+
+  @override
+  void dispose() {
+    _unauthorizedSub?.cancel();
+    super.dispose();
   }
 
   Future<void> _init() async {
@@ -165,9 +181,52 @@ class AuthProvider extends ChangeNotifier {
     try {
       await ApiService.post(ApiConfig.logoutUrl);
     } catch (_) {}
+    await BiometricService.disable();
     await _clearAuth();
     notifyListeners();
   }
+
+  /// Login using device biometrics. The stored login token is used to silently
+  /// re-authenticate; if the session has expired the user will be prompted to
+  /// log in normally.
+  Future<bool> loginWithBiometric() async {
+    _loading = true;
+    _error = null;
+    notifyListeners();
+
+    final authenticated = await BiometricService.authenticate(
+      reason: 'Masuk ke aplikasi TPQ',
+    );
+    if (!authenticated) {
+      _error = 'Autentikasi biometrik dibatalkan';
+      _loading = false;
+      notifyListeners();
+      return false;
+    }
+
+    // Try reusing the existing saved token via refresh
+    try {
+      final saved = await ApiService.getToken();
+      if (saved != null && saved.isNotEmpty) {
+        _token = saved;
+        await ApiService.setToken(saved);
+        await refreshToken();
+        if (isAuthenticated) {
+          _loading = false;
+          notifyListeners();
+          return true;
+        }
+      }
+    } catch (_) {}
+
+    _error = 'Sesi habis, silakan login ulang dengan username & password';
+    _loading = false;
+    notifyListeners();
+    return false;
+  }
+
+  /// After a successful PIN action, offer to save that PIN for biometric use.
+  Future<void> savePin(String pin) => BiometricService.savePin(pin);
 
   Future<void> _clearAuth() async {
     _token = null;

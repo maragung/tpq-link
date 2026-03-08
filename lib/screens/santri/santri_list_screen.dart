@@ -1,9 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../providers/santri_provider.dart';
+import '../../providers/auth_provider.dart';
 import '../../utils/constants.dart';
 import '../../utils/helpers.dart';
-// pin_dialog used in santri management actions
+import '../../widgets/skeleton_loader.dart';
 
 class SantriListScreen extends StatefulWidget {
   const SantriListScreen({super.key});
@@ -114,7 +115,7 @@ class _SantriListScreenState extends State<SantriListScreen> {
         // Santri List
         Expanded(
           child: santriProv.loading
-              ? const Center(child: CircularProgressIndicator())
+              ? const SkeletonList(count: 7, showSubtitle2: false)
               : santriList.isEmpty
                   ? const Center(
                       child: Column(
@@ -226,6 +227,9 @@ class _SantriListScreenState extends State<SantriListScreen> {
   }
 
   void _showSantriDetail(BuildContext context, dynamic s) {
+    final canManage =
+        Provider.of<AuthProvider>(context, listen: false).user?.isFullAccess ??
+            false;
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
@@ -353,18 +357,20 @@ class _SantriListScreenState extends State<SantriListScreen> {
               ),
               const SizedBox(height: 20),
 
-              // Actions
-              Row(
-                children: [
-                  Expanded(
-                    child: OutlinedButton.icon(
-                      onPressed: () {
-                        Navigator.pop(context);
-                        Navigator.pushNamed(context, '/santri/tambah',
-                            arguments: s.id);
-                      },
-                      icon: const Icon(Icons.edit, size: 18),
-                      label: const Text('Edit'),
+              // Aif (canManage) ...[
+                    Expanded(
+                      child: OutlinedButton.icon(
+                        onPressed: () {
+                          Navigator.pop(context);
+                          Navigator.pushNamed(context, '/santri/tambah',
+                              arguments: s.id);
+                        },
+                        icon: const Icon(Icons.edit, size: 18),
+                        label: const Text('Edit'),
+                      ),
+                    ),
+                    const SizedBox(width: 12),
+                  ]it'),
                     ),
                   ),
                   const SizedBox(width: 12),

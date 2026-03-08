@@ -1,9 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../providers/pembayaran_provider.dart';
+import '../../providers/auth_provider.dart';
 import '../../utils/constants.dart';
 import '../../utils/helpers.dart';
 import '../../widgets/pin_dialog.dart';
+import '../../widgets/skeleton_loader.dart';
 
 class PembayaranScreen extends StatelessWidget {
   const PembayaranScreen({super.key});
@@ -11,6 +13,8 @@ class PembayaranScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final prov = context.watch<PembayaranProvider>();
+    final canManage =
+        context.watch<AuthProvider>().user?.isFullAccess ?? false;
 
     return Column(
       children: [
@@ -44,7 +48,7 @@ class PembayaranScreen extends StatelessWidget {
         // Payment list
         Expanded(
           child: prov.loading
-              ? const Center(child: CircularProgressIndicator())
+              ? const SkeletonList(count: 6, showSubtitle2: true)
               : prov.pembayaranList.isEmpty
                   ? const Center(
                       child: Column(
@@ -108,7 +112,8 @@ class PembayaranScreen extends StatelessWidget {
                                 ],
                               ),
                               isThreeLine: true,
-                              onLongPress: () async {
+                              onLongPress: canManage
+                                  ? () async {
                                 final confirm = await showDialog<bool>(
                                   context: context,
                                   builder: (_) => AlertDialog(
@@ -148,7 +153,8 @@ class PembayaranScreen extends StatelessWidget {
                                     }
                                   }
                                 }
-                              },
+                                  }
+                                  : null,
                             ),
                           );
                         },

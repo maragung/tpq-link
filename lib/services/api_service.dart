@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:convert';
 import 'package:http/http.dart' as http;
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
@@ -6,6 +7,12 @@ import '../utils/constants.dart';
 class ApiService {
   static const _storage = FlutterSecureStorage();
   static String? _token;
+
+  /// Fires whenever a server returns HTTP 401 (token expired/invalid).
+  /// AuthProvider listens to this and triggers auto-logout + redirect to login.
+  static final _unauthorizedController =
+      StreamController<void>.broadcast();
+  static Stream<void> get onUnauthorized => _unauthorizedController.stream;
 
   static Future<void> setToken(String token) async {
     _token = token;
@@ -100,6 +107,15 @@ class ApiService {
   }
 
   static Map<String, dynamic> _handleResponse(http.Response response) {
+    // 401 → token expired or invalid → notify listeners to force re-login
+    if (response.statusCode == 401) {
+      _unauthorizedController.add(null);
+      return {
+        'success': false,
+        'pesan': 'Sesi habis, silakan login ulang',
+      };
+    }
+
     try {
       final data = jsonDecode(response.body) as Map<String, dynamic>;
       return data;

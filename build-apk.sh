@@ -1,13 +1,14 @@
 #!/usr/bin/env bash
 # =============================================================================
-# build-apk.sh — Build release APK for TPQ Futuhil Hidayah
+# build-apk.sh — Build release APK / AAB for TPQ Futuhil Hidayah
 # =============================================================================
 # Usage:
 #   chmod +x build-apk.sh
-#   ./build-apk.sh [--split-per-abi]
+#   ./build-apk.sh [--split-per-abi] [--aab]
 #
 # Options:
 #   --split-per-abi   Build separate APKs for each ABI (arm64-v8a, armeabi-v7a, x86_64)
+#   --aab             Build Android App Bundle (.aab) instead of APK (required for Play Store)
 #
 # Prerequisites:
 #   - Flutter SDK in PATH
@@ -41,9 +42,11 @@ echo ""
 
 # ── Parse arguments ──────────────────────────────────────────────────────────
 SPLIT_PER_ABI=false
+BUILD_AAB=false
 for arg in "$@"; do
   case "$arg" in
     --split-per-abi) SPLIT_PER_ABI=true ;;
+    --aab) BUILD_AAB=true ;;
     *) warn "Unknown argument: $arg" ;;
   esac
 done
@@ -87,7 +90,19 @@ success "Dependencies fetched."
 # ── Build ─────────────────────────────────────────────────────────────────────
 OUTPUT_DIR="$SCRIPT_DIR/build/app/outputs/flutter-apk"
 
-if [[ "$SPLIT_PER_ABI" == "true" ]]; then
+if [[ "$BUILD_AAB" == "true" ]]; then
+  log "Building Android App Bundle (.aab) for Play Store..."
+  flutter build appbundle --release
+  echo ""
+  AAB_PATH="$SCRIPT_DIR/build/app/outputs/bundle/release/app-release.aab"
+  if [[ -f "$AAB_PATH" ]]; then
+    AAB_SIZE=$(du -sh "$AAB_PATH" | cut -f1)
+    success "Build completed!"
+    echo -e "  ${GREEN}→${RESET} $AAB_PATH (${AAB_SIZE})"
+  else
+    error "AAB not found at expected location: $AAB_PATH"
+  fi
+elif [[ "$SPLIT_PER_ABI" == "true" ]]; then
   log "Building release APKs split by ABI..."
   flutter build apk --release --split-per-abi
   echo ""

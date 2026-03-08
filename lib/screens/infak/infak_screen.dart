@@ -1,8 +1,11 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
+import '../../providers/auth_provider.dart';
 import '../../services/api_service.dart';
 import '../../utils/constants.dart';
 import '../../utils/helpers.dart';
 import '../../widgets/pin_dialog.dart';
+import '../../widgets/skeleton_loader.dart';
 
 class InfakScreen extends StatefulWidget {
   const InfakScreen({super.key});
@@ -117,9 +120,16 @@ class _InfakScreenState extends State<InfakScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final canManage =
+        Provider.of<AuthProvider>(context).user?.isFullAccess ?? false;
     return Scaffold(
       body: _loading
-          ? const Center(child: CircularProgressIndicator())
+          ? const Column(
+              children: [
+                SkeletonSummaryCard(),
+                Expanded(child: SkeletonList(count: 5)),
+              ],
+            )
           : RefreshIndicator(
               onRefresh: _fetchInfak,
               child: Column(
@@ -193,11 +203,13 @@ class _InfakScreenState extends State<InfakScreen> {
                 ],
               ),
             ),
-      floatingActionButton: FloatingActionButton(
-        onPressed: _showAddDialog,
-        backgroundColor: Colors.pink,
-        child: const Icon(Icons.add),
-      ),
+      floatingActionButton: canManage
+          ? FloatingActionButton(
+              onPressed: _showAddDialog,
+              backgroundColor: Colors.pink,
+              child: const Icon(Icons.add),
+            )
+          : null,
     );
   }
 }
