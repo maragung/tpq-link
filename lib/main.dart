@@ -8,6 +8,7 @@ import 'providers/auth_provider.dart';
 import 'providers/santri_provider.dart';
 import 'providers/pembayaran_provider.dart';
 import 'providers/dashboard_provider.dart';
+import 'providers/absensi_provider.dart';
 import 'screens/auth/login_screen.dart';
 import 'screens/auth/qr_scan_screen.dart';
 import 'screens/dashboard/dashboard_screen.dart';
@@ -21,6 +22,7 @@ import 'screens/jurnal/jurnal_screen.dart';
 import 'screens/saran/saran_screen.dart';
 import 'screens/pengaturan/pengaturan_screen.dart';
 import 'screens/notifikasi/notifikasi_screen.dart';
+import 'screens/absensi/absensi_screen.dart';
 import 'services/background_service.dart';
 import 'utils/constants.dart';
 
@@ -107,6 +109,7 @@ class _TPQAppState extends State<TPQApp> {
           create: (_) => PembayaranProvider(),
           update: (_, auth, prev) => prev!..updateAuth(auth),
         ),
+        ChangeNotifierProvider(create: (_) => AbsensiProvider()),
       ],
       child: Consumer<AuthProvider>(
         builder: (context, auth, _) {
@@ -168,6 +171,7 @@ class _TPQAppState extends State<TPQApp> {
               '/saran': (_) => const SaranScreen(),
               '/pengaturan': (_) => const PengaturanScreen(),
               '/notifikasi': (_) => const NotifikasiScreen(),
+              '/absensi': (_) => const AbsensiScreen(),
             },
           );
         },
@@ -253,12 +257,17 @@ class _MainScreenState extends State<MainScreen> {
                   case 'pengeluaran':
                     Navigator.pushNamed(context, '/pengeluaran');
                     break;
+                  case 'absensi':
+                    Navigator.pushNamed(context, '/absensi');
+                    break;
                   case 'logout':
                     auth.logout();
                     break;
                 }
               },
               itemBuilder: (_) => [
+                const PopupMenuItem(
+                    value: 'absensi', child: Text('Absensi')),
                 if (canManage)
                   const PopupMenuItem(
                       value: 'pengeluaran', child: Text('Pengeluaran')),

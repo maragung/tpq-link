@@ -72,6 +72,14 @@ class ApiConfig {
   // Admin
   static String get adminUrl => '$baseUrl/admin';
   static String get pinUrl => '$baseUrl/admin/pin';
+
+  // Absensi
+  static String get absensiUrl => '$baseUrl/absensi';
+
+  // Email Server (Developer only)
+  static String get emailServerUrl => '$baseUrl/email-server';
+  static String emailServerDetailUrl(dynamic id) => '$baseUrl/email-server/$id';
+  static String get emailLogUrl => '$baseUrl/email-log';
 }
 
 // namaBulan function is in helpers.dart
