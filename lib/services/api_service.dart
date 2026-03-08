@@ -3,10 +3,20 @@ import 'dart:convert';
 import 'package:http/http.dart' as http;
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import '../utils/constants.dart';
+import 'certificate_pinning.dart';
 
 class ApiService {
   static const _storage = FlutterSecureStorage();
   static String? _token;
+
+  /// Shared HTTP client — uses certificate pinning in release mode when
+  /// fingerprints are configured in CertificatePinning.
+  static http.Client _client = CertificatePinning.createClient();
+
+  /// Recreate the HTTP client (e.g. after changing server URL).
+  static void resetClient() {
+    _client = CertificatePinning.createClient();
+  }
 
   /// Fires whenever a server returns HTTP 401 (token expired/invalid).
   /// AuthProvider listens to this and triggers auto-logout + redirect to login.
@@ -58,7 +68,7 @@ class ApiService {
       if (queryParams != null) {
         uri = uri.replace(queryParameters: queryParams);
       }
-      final response = await http
+      final response = await _client
           .get(uri, headers: _headers)
           .timeout(const Duration(seconds: 30));
       return _handleResponse(response);
@@ -70,7 +80,7 @@ class ApiService {
   static Future<Map<String, dynamic>> post(String url,
       {Map<String, dynamic>? body}) async {
     try {
-      final response = await http
+      final response = await _client
           .post(Uri.parse(url), headers: _headers, body: jsonEncode(body ?? {}))
           .timeout(const Duration(seconds: 30));
       return _handleResponse(response);
@@ -82,7 +92,7 @@ class ApiService {
   static Future<Map<String, dynamic>> put(String url,
       {Map<String, dynamic>? body}) async {
     try {
-      final response = await http
+      final response = await _client
           .put(Uri.parse(url), headers: _headers, body: jsonEncode(body ?? {}))
           .timeout(const Duration(seconds: 30));
       return _handleResponse(response);
@@ -112,16 +122,20 @@ class ApiService {
       _unauthorizedController.add(null);
       return {
         'success': false,
+        'statusCode': 401,
         'pesan': 'Sesi habis, silakan login ulang',
       };
     }
 
     try {
       final data = jsonDecode(response.body) as Map<String, dynamic>;
-      return data;
+      // Always include statusCode so callers (e.g. background queue) can
+      // distinguish permanent (4xx) from transient (5xx / network) failures.
+      return {'statusCode': response.statusCode, ...data};
     } catch (_) {
       return {
         'success': false,
+        'statusCode': response.statusCode,
         'pesan': 'Respon server tidak valid (${response.statusCode})',
       };
     }

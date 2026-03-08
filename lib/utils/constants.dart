@@ -32,8 +32,9 @@ class ApiConfig {
   static String get loginUrl => '$baseUrl/auth/app-login';
   static String get refreshUrl => '$baseUrl/auth/app-refresh';
   static String get meUrl => '$baseUrl/auth/me';
-  static String get qrLoginUrl => '$baseUrl/auth/qr-login';
-  static String get logoutUrl => '$baseUrl/auth/logout';
+  static String get qrLoginUrl    => '$baseUrl/auth/qr-login';
+  static String get qrExchangeUrl => '$baseUrl/auth/qr-exchange';
+  static String get logoutUrl     => '$baseUrl/auth/logout';
 
   // Santri
   static String get santriUrl => '$baseUrl/santri';

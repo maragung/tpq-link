@@ -155,8 +155,12 @@ class _LoginScreenState extends State<LoginScreen> {
                     if (v == null || v.trim().isEmpty) {
                       return 'Alamat server wajib diisi';
                     }
-                    if (!v.trim().startsWith('http')) {
+                    final url = v.trim().toLowerCase();
+                    if (!url.startsWith('http://') && !url.startsWith('https://')) {
                       return 'Harus dimulai dengan http:// atau https://';
+                    }
+                    if (url.startsWith('http://') && !url.contains('localhost') && !url.contains('127.0.0.1')) {
+                      return 'Peringatan: gunakan https:// agar data tidak bisa disadap';
                     }
                     return null;
                   },

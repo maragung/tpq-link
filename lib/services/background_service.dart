@@ -79,6 +79,7 @@ class BackgroundService {
       'url': url,
       'body': body,
       'queued_at': DateTime.now().toIso8601String(),
+      'retry_count': 0,
     });
 
     await _storage.write(key: _pendingTasksKey, value: jsonEncode(tasks));
@@ -95,7 +96,23 @@ class BackgroundService {
     );
   }
 
+  // Maximum number of attempts before a task is considered permanently failed.
+  static const _maxRetries = 10;
+
+  // HTTP status codes that indicate a permanent failure — no point retrying.
+  // 429 (Too Many Requests) is intentionally excluded; it is transient.
+  static const _permanentErrorCodes = {400, 401, 403, 404, 405, 410, 422};
+
   /// Processes all queued tasks. Called by WorkManager in its own isolate.
+  ///
+  /// A task is discarded only when:
+  ///   - it succeeds (success == true), OR
+  ///   - the server returns a permanent 4xx error (bad request, unauthorised,
+  ///     not found, etc.), OR
+  ///   - it has exceeded [_maxRetries] attempts.
+  ///
+  /// Network errors and 5xx responses keep the task in the queue so it will
+  /// be retried on the next WorkManager run.
   static Future<void> _processQueue() async {
     final raw = await _storage.read(key: _pendingTasksKey);
     if (raw == null || raw.isEmpty) return;
@@ -114,6 +131,11 @@ class BackgroundService {
     }
 
     for (final task in tasks) {
+      final retryCount = (task['retry_count'] as int?) ?? 0;
+
+      // Discard tasks that have already exhausted all retry attempts.
+      if (retryCount >= _maxRetries) continue;
+
       try {
         final result = await _execute(
           task['method'] as String,
@@ -122,9 +144,23 @@ class BackgroundService {
               ? Map<String, dynamic>.from(task['body'] as Map)
               : null,
         );
-        if (result['success'] != true) remaining.add(task);
+
+        if (result['success'] == true) {
+          // Success — drop from queue.
+          continue;
+        }
+
+        final statusCode = result['statusCode'] as int?;
+        if (statusCode != null && _permanentErrorCodes.contains(statusCode)) {
+          // Permanent server-side error — drop from queue, no point retrying.
+          continue;
+        }
+
+        // Transient failure (network error, 5xx, 429) — keep and increment.
+        remaining.add({...task, 'retry_count': retryCount + 1});
       } catch (_) {
-        remaining.add(task);
+        // Unexpected exception (e.g. socket error) — keep and increment.
+        remaining.add({...task, 'retry_count': retryCount + 1});
       }
     }
 
