@@ -4,6 +4,7 @@ import '../../providers/santri_provider.dart';
 import '../../providers/auth_provider.dart';
 import '../../utils/constants.dart';
 import '../../utils/helpers.dart';
+import '../../widgets/pin_dialog.dart';
 import '../../widgets/skeleton_loader.dart';
 
 class SantriListScreen extends StatefulWidget {
@@ -357,7 +358,10 @@ class _SantriListScreenState extends State<SantriListScreen> {
               ),
               const SizedBox(height: 20),
 
-              // Aif (canManage) ...[
+              // Action buttons
+              Row(
+                children: [
+                  if (canManage) ...[
                     Expanded(
                       child: OutlinedButton.icon(
                         onPressed: () {
@@ -370,10 +374,63 @@ class _SantriListScreenState extends State<SantriListScreen> {
                       ),
                     ),
                     const SizedBox(width: 12),
-                  ]it'),
+                    Expanded(
+                      child: OutlinedButton.icon(
+                        onPressed: () async {
+                          final confirm = await showDialog<bool>(
+                            context: context,
+                            builder: (_) => AlertDialog(
+                              title: const Text('Nonaktifkan Santri'),
+                              content: Text(
+                                'Yakin ingin menonaktifkan ${s.namaLengkap}?',
+                              ),
+                              actions: [
+                                TextButton(
+                                  onPressed: () => Navigator.pop(context, false),
+                                  child: const Text('Batal'),
+                                ),
+                                ElevatedButton(
+                                  onPressed: () => Navigator.pop(context, true),
+                                  style: ElevatedButton.styleFrom(
+                                    backgroundColor: AppColors.danger,
+                                  ),
+                                  child: const Text('Nonaktifkan'),
+                                ),
+                              ],
+                            ),
+                          );
+                          if (confirm != true || !context.mounted) return;
+
+                          final pin = await showPinDialog(context);
+                          if (pin == null || !context.mounted) return;
+
+                          final result = await Provider.of<SantriProvider>(
+                            context,
+                            listen: false,
+                          ).deleteSantri(s.id, pin);
+
+                          if (!context.mounted) return;
+                          Navigator.pop(context);
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            SnackBar(
+                              content: Text(result['pesan'] ?? 'Berhasil'),
+                              backgroundColor: result['success'] == true
+                                  ? AppColors.success
+                                  : AppColors.danger,
+                            ),
+                          );
+                        },
+                        icon: const Icon(Icons.person_off, size: 18,
+                            color: AppColors.danger),
+                        label: const Text('Nonaktifkan',
+                            style: TextStyle(color: AppColors.danger)),
+                        style: OutlinedButton.styleFrom(
+                          side: const BorderSide(color: AppColors.danger),
+                        ),
+                      ),
                     ),
-                  ),
-                  const SizedBox(width: 12),
+                    const SizedBox(width: 12),
+                  ],
                   Expanded(
                     child: ElevatedButton.icon(
                       onPressed: () {

@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../providers/auth_provider.dart';
 import '../../services/api_service.dart';
+import '../../services/background_service.dart';
 import '../../utils/constants.dart';
 import '../../utils/helpers.dart';
 import '../../widgets/pin_dialog.dart';
@@ -107,7 +108,9 @@ class _PengeluaranScreenState extends State<PengeluaranScreen> {
       if (pin == null) return;
 
       result['pin'] = pin;
-      final response = await ApiService.post(ApiConfig.pengeluaranUrl, body: result);
+      final response = await BackgroundService.enqueueOrExecute(
+        'POST', ApiConfig.pengeluaranUrl, body: result,
+      );
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
@@ -118,6 +121,49 @@ class _PengeluaranScreenState extends State<PengeluaranScreen> {
         );
         if (response['success'] == true) _fetch();
       }
+    }
+  }
+
+  Future<void> _deletePengeluaran(dynamic item) async {
+    final confirm = await showDialog<bool>(
+      context: context,
+      builder: (_) => AlertDialog(
+        title: const Text('Hapus Pengeluaran'),
+        content: Text(
+          'Yakin ingin menghapus pengeluaran "${item['keterangan']}"?\n'
+          'Nominal: ${formatCurrency(item['nominal'] ?? 0)}',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context, false),
+            child: const Text('Batal'),
+          ),
+          ElevatedButton(
+            onPressed: () => Navigator.pop(context, true),
+            style: ElevatedButton.styleFrom(backgroundColor: AppColors.danger),
+            child: const Text('Hapus'),
+          ),
+        ],
+      ),
+    );
+    if (confirm != true || !mounted) return;
+
+    final pin = await showPinDialog(context);
+    if (pin == null || !mounted) return;
+
+    final response = await BackgroundService.enqueueOrExecute(
+      'DELETE', ApiConfig.pengeluaranDetailUrl(item['id']),
+      body: {'pin': pin},
+    );
+    if (mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(response['pesan'] ?? 'Berhasil'),
+          backgroundColor:
+              response['success'] == true ? AppColors.success : AppColors.danger,
+        ),
+      );
+      if (response['success'] == true) _fetch();
     }
   }
 
@@ -177,6 +223,9 @@ class _PengeluaranScreenState extends State<PengeluaranScreen> {
                               return Card(
                                 margin: const EdgeInsets.only(bottom: 8),
                                 child: ListTile(
+                                  onLongPress: canManage
+                                      ? () => _deletePengeluaran(p)
+                                      : null,
                                   leading: CircleAvatar(
                                     backgroundColor: AppColors.danger.withAlpha(51),
                                     child: const Icon(Icons.money_off,

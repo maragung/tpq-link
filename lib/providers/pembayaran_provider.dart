@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import '../models/pembayaran.dart';
 import '../services/api_service.dart';
+import '../services/background_service.dart';
 import '../utils/constants.dart';
 import '../providers/auth_provider.dart';
 
@@ -51,15 +52,16 @@ class PembayaranProvider extends ChangeNotifier {
   }
 
   Future<Map<String, dynamic>> bayarSPP(Map<String, dynamic> data) async {
-    final result = await ApiService.post(ApiConfig.pembayaranUrl, body: data);
+    final result = await BackgroundService.enqueueOrExecute(
+      'POST', ApiConfig.pembayaranUrl, body: data,
+    );
     if (result['success'] == true) fetchPembayaran();
     return result;
   }
 
   Future<Map<String, dynamic>> deletePembayaran(int id, String pin) async {
-    final result = await ApiService.delete(
-      ApiConfig.pembayaranDetailUrl(id),
-      body: {'pin': pin},
+    final result = await BackgroundService.enqueueOrExecute(
+      'DELETE', ApiConfig.pembayaranDetailUrl(id), body: {'pin': pin},
     );
     if (result['success'] == true) fetchPembayaran();
     return result;

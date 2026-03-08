@@ -259,11 +259,14 @@ class _MainScreenState extends State<MainScreen> {
                 }
               },
               itemBuilder: (_) => [
-                const PopupMenuItem(
-                    value: 'pengeluaran', child: Text('Pengeluaran')),
-                const PopupMenuItem(value: 'saran', child: Text('Kotak Saran')),
-                const PopupMenuItem(
-                    value: 'pengaturan', child: Text('Pengaturan')),
+                if (canManage)
+                  const PopupMenuItem(
+                      value: 'pengeluaran', child: Text('Pengeluaran')),
+                if (canManage)
+                  const PopupMenuItem(value: 'saran', child: Text('Kotak Saran')),
+                if (canManage)
+                  const PopupMenuItem(
+                      value: 'pengaturan', child: Text('Pengaturan')),
                 const PopupMenuItem(
                   value: 'logout',
                   child: Text('Logout', style: TextStyle(color: Colors.red)),

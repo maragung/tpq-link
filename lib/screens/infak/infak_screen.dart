@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../providers/auth_provider.dart';
 import '../../services/api_service.dart';
+import '../../services/background_service.dart';
 import '../../utils/constants.dart';
 import '../../utils/helpers.dart';
 import '../../widgets/pin_dialog.dart';
@@ -104,7 +105,9 @@ class _InfakScreenState extends State<InfakScreen> {
       if (pin == null) return;
 
       result['pin'] = pin;
-      final response = await ApiService.post(ApiConfig.infakUrl, body: result);
+      final response = await BackgroundService.enqueueOrExecute(
+        'POST', ApiConfig.infakUrl, body: result,
+      );
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
@@ -115,6 +118,49 @@ class _InfakScreenState extends State<InfakScreen> {
         );
         if (response['success'] == true) _fetchInfak();
       }
+    }
+  }
+
+  Future<void> _deleteInfak(dynamic infak) async {
+    final confirm = await showDialog<bool>(
+      context: context,
+      builder: (_) => AlertDialog(
+        title: const Text('Hapus Infak'),
+        content: Text(
+          'Yakin ingin menghapus infak dari ${infak['nama_donatur']}?\n'
+          'Nominal: ${formatCurrency(infak['nominal'] ?? 0)}',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context, false),
+            child: const Text('Batal'),
+          ),
+          ElevatedButton(
+            onPressed: () => Navigator.pop(context, true),
+            style: ElevatedButton.styleFrom(backgroundColor: AppColors.danger),
+            child: const Text('Hapus'),
+          ),
+        ],
+      ),
+    );
+    if (confirm != true || !mounted) return;
+
+    final pin = await showPinDialog(context);
+    if (pin == null || !mounted) return;
+
+    final response = await BackgroundService.enqueueOrExecute(
+      'DELETE', ApiConfig.infakDetailUrl(infak['id']),
+      body: {'pin': pin},
+    );
+    if (mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(response['pesan'] ?? 'Berhasil'),
+          backgroundColor:
+              response['success'] == true ? AppColors.success : AppColors.danger,
+        ),
+      );
+      if (response['success'] == true) _fetchInfak();
     }
   }
 
@@ -175,6 +221,9 @@ class _InfakScreenState extends State<InfakScreen> {
                               return Card(
                                 margin: const EdgeInsets.only(bottom: 8),
                                 child: ListTile(
+                                  onLongPress: canManage
+                                      ? () => _deleteInfak(infak)
+                                      : null,
                                   leading: CircleAvatar(
                                     backgroundColor: Colors.pink.withAlpha(51),
                                     child: const Icon(Icons.favorite,

@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 // santri model used via dynamic from API response
 import '../models/pembayaran.dart';
 import '../services/api_service.dart';
+import '../services/background_service.dart';
 import '../utils/constants.dart';
 import '../providers/auth_provider.dart';
 
@@ -52,21 +53,24 @@ class SantriProvider extends ChangeNotifier {
   }
 
   Future<Map<String, dynamic>> addSantri(Map<String, dynamic> data) async {
-    final result = await ApiService.post(ApiConfig.santriUrl, body: data);
+    final result = await BackgroundService.enqueueOrExecute(
+      'POST', ApiConfig.santriUrl, body: data,
+    );
     if (result['success'] == true) fetchSantriStatus();
     return result;
   }
 
   Future<Map<String, dynamic>> updateSantri(int id, Map<String, dynamic> data) async {
-    final result = await ApiService.put(ApiConfig.santriDetailUrl(id), body: data);
+    final result = await BackgroundService.enqueueOrExecute(
+      'PUT', ApiConfig.santriDetailUrl(id), body: data,
+    );
     if (result['success'] == true) fetchSantriStatus();
     return result;
   }
 
   Future<Map<String, dynamic>> deleteSantri(int id, String pin) async {
-    final result = await ApiService.delete(
-      ApiConfig.santriDetailUrl(id),
-      body: {'pin': pin},
+    final result = await BackgroundService.enqueueOrExecute(
+      'DELETE', ApiConfig.santriDetailUrl(id), body: {'pin': pin},
     );
     if (result['success'] == true) fetchSantriStatus();
     return result;
