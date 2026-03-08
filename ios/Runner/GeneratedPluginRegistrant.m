@@ -12,10 +12,10 @@
 @import flutter_secure_storage;
 #endif
 
-#if __has_include(<fluttertoast/FluttertoastPlugin.h>)
-#import <fluttertoast/FluttertoastPlugin.h>
+#if __has_include(<local_auth_darwin/LocalAuthPlugin.h>)
+#import <local_auth_darwin/LocalAuthPlugin.h>
 #else
-@import fluttertoast;
+@import local_auth_darwin;
 #endif
 
 #if __has_include(<mobile_scanner/MobileScannerPlugin.h>)
@@ -24,16 +24,10 @@
 @import mobile_scanner;
 #endif
 
-#if __has_include(<shared_preferences_foundation/SharedPreferencesPlugin.h>)
-#import <shared_preferences_foundation/SharedPreferencesPlugin.h>
+#if __has_include(<path_provider_foundation/PathProviderPlugin.h>)
+#import <path_provider_foundation/PathProviderPlugin.h>
 #else
-@import shared_preferences_foundation;
-#endif
-
-#if __has_include(<sqflite_darwin/SqflitePlugin.h>)
-#import <sqflite_darwin/SqflitePlugin.h>
-#else
-@import sqflite_darwin;
+@import path_provider_foundation;
 #endif
 
 #if __has_include(<uni_links/UniLinksPlugin.h>)
@@ -42,22 +36,21 @@
 @import uni_links;
 #endif
 
-#if __has_include(<url_launcher_ios/URLLauncherPlugin.h>)
-#import <url_launcher_ios/URLLauncherPlugin.h>
+#if __has_include(<workmanager/WorkmanagerPlugin.h>)
+#import <workmanager/WorkmanagerPlugin.h>
 #else
-@import url_launcher_ios;
+@import workmanager;
 #endif
 
 @implementation GeneratedPluginRegistrant
 
 + (void)registerWithRegistry:(NSObject<FlutterPluginRegistry>*)registry {
   [FlutterSecureStoragePlugin registerWithRegistrar:[registry registrarForPlugin:@"FlutterSecureStoragePlugin"]];
-  [FluttertoastPlugin registerWithRegistrar:[registry registrarForPlugin:@"FluttertoastPlugin"]];
+  [LocalAuthPlugin registerWithRegistrar:[registry registrarForPlugin:@"LocalAuthPlugin"]];
   [MobileScannerPlugin registerWithRegistrar:[registry registrarForPlugin:@"MobileScannerPlugin"]];
-  [SharedPreferencesPlugin registerWithRegistrar:[registry registrarForPlugin:@"SharedPreferencesPlugin"]];
-  [SqflitePlugin registerWithRegistrar:[registry registrarForPlugin:@"SqflitePlugin"]];
+  [PathProviderPlugin registerWithRegistrar:[registry registrarForPlugin:@"PathProviderPlugin"]];
   [UniLinksPlugin registerWithRegistrar:[registry registrarForPlugin:@"UniLinksPlugin"]];
-  [URLLauncherPlugin registerWithRegistrar:[registry registrarForPlugin:@"URLLauncherPlugin"]];
+  [WorkmanagerPlugin registerWithRegistrar:[registry registrarForPlugin:@"WorkmanagerPlugin"]];
 }
 
 @end

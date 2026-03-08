@@ -47,6 +47,22 @@ for arg in "$@"; do
   esac
 done
 
+# ── Resolve Flutter PATH ──────────────────────────────────────────────────────
+if ! command -v flutter &>/dev/null; then
+  # Try common install locations before giving up
+  for _flutter_candidate in \
+    "$HOME/flutter/bin" \
+    "/opt/flutter/bin" \
+    "/usr/local/flutter/bin"
+  do
+    if [[ -x "$_flutter_candidate/flutter" ]]; then
+      export PATH="$_flutter_candidate:$PATH"
+      log "Flutter found at $_flutter_candidate (added to PATH)"
+      break
+    fi
+  done
+fi
+
 # ── Check Flutter ─────────────────────────────────────────────────────────────
 command -v flutter &>/dev/null || error "Flutter SDK not found in PATH. Run scripts/install.sh first."
 FLUTTER_VERSION=$(flutter --version 2>&1 | head -1)
