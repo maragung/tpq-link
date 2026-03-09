@@ -23,6 +23,10 @@ import 'screens/saran/saran_screen.dart';
 import 'screens/pengaturan/pengaturan_screen.dart';
 import 'screens/notifikasi/notifikasi_screen.dart';
 import 'screens/absensi/absensi_screen.dart';
+import 'screens/alumni/alumni_screen.dart';
+import 'screens/keuangan/keuangan_screen.dart';
+import 'screens/laporan/laporan_screen.dart';
+import 'screens/pembayaran/pembayaran_lain_screen.dart';
 import 'services/background_service.dart';
 import 'utils/constants.dart';
 
@@ -172,6 +176,10 @@ class _TPQAppState extends State<TPQApp> {
               '/pengaturan': (_) => const PengaturanScreen(),
               '/notifikasi': (_) => const NotifikasiScreen(),
               '/absensi': (_) => const AbsensiScreen(),
+              '/alumni': (_) => const AlumniScreen(),
+              '/keuangan': (_) => const KeuanganScreen(),
+              '/laporan': (_) => const LaporanScreen(),
+              '/pembayaran-lain': (_) => const PembayaranLainScreen(),
             },
           );
         },
@@ -194,7 +202,7 @@ class _MainScreenState extends State<MainScreen> {
     DashboardScreen(),
     SantriListScreen(),
     PembayaranScreen(),
-    InfakScreen(),
+    BayarSPPScreen(embedded: true),
     JurnalScreen(),
   ];
 
@@ -202,7 +210,7 @@ class _MainScreenState extends State<MainScreen> {
     'Dashboard',
     'Data Santri',
     'Pembayaran',
-    'Infak/Sedekah',
+    'Bayar SPP',
     'Jurnal Kas',
   ];
 
@@ -300,14 +308,14 @@ class _MainScreenState extends State<MainScreen> {
               label: 'Santri',
             ),
             NavigationDestination(
-              icon: Icon(Icons.payment_outlined),
-              selectedIcon: Icon(Icons.payment),
+              icon: Icon(Icons.receipt_long_outlined),
+              selectedIcon: Icon(Icons.receipt_long),
               label: 'SPP',
             ),
             NavigationDestination(
-              icon: Icon(Icons.favorite_outline),
-              selectedIcon: Icon(Icons.favorite),
-              label: 'Infak',
+              icon: Icon(Icons.payment_outlined),
+              selectedIcon: Icon(Icons.payment),
+              label: 'Bayar SPP',
             ),
             NavigationDestination(
               icon: Icon(Icons.book_outlined),
@@ -330,7 +338,13 @@ class _MainScreenState extends State<MainScreen> {
                             Navigator.pushNamed(context, '/bayar-spp'),
                         child: const Icon(Icons.add),
                       )
-                    : null)
+                    : _currentIndex == 4
+                        ? FloatingActionButton(
+                            onPressed: () =>
+                                Navigator.pushNamed(context, '/infak'),
+                            child: const Icon(Icons.favorite),
+                          )
+                        : null)
             : null,
       ),
     );

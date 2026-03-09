@@ -130,10 +130,12 @@ class _SantriFormScreenState extends State<SantriFormScreen> {
       appBar: AppBar(
         title: Text(_isEdit ? 'Edit Santri' : 'Tambah Santri'),
       ),
-      body: _isLoading && _isEdit
-          ? const Center(child: CircularProgressIndicator())
-          : SingleChildScrollView(
-              padding: const EdgeInsets.all(16),
+      body: SafeArea(
+        top: false,
+        child: _isLoading && _isEdit
+            ? const Center(child: CircularProgressIndicator())
+            : SingleChildScrollView(
+                padding: const EdgeInsets.all(16),
               child: Form(
                 key: _formKey,
                 child: Column(
@@ -269,6 +271,7 @@ class _SantriFormScreenState extends State<SantriFormScreen> {
                 ),
               ),
             ),
+        ),
     );
   }
 }

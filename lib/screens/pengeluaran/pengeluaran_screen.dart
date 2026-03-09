@@ -173,7 +173,7 @@ class _PengeluaranScreenState extends State<PengeluaranScreen> {
         Provider.of<AuthProvider>(context).user?.isFullAccess ?? false;
     return Scaffold(
       appBar: AppBar(title: const Text('Pengeluaran')),
-      body: _loading
+      body: SafeArea(top: false, child: _loading
           ? const Column(
               children: [
                 SkeletonSummaryCard(),
@@ -216,7 +216,7 @@ class _PengeluaranScreenState extends State<PengeluaranScreen> {
                             child: Text('Belum ada data pengeluaran',
                                 style: TextStyle(color: AppColors.textSecondary)))
                         : ListView.builder(
-                            padding: const EdgeInsets.symmetric(horizontal: 16),
+                            padding: const EdgeInsets.fromLTRB(16, 0, 16, 80),
                             itemCount: _pengeluaranList.length,
                             itemBuilder: (context, index) {
                               final p = _pengeluaranList[index];
@@ -254,6 +254,7 @@ class _PengeluaranScreenState extends State<PengeluaranScreen> {
                 ],
               ),
             ),
+        ),
       floatingActionButton: canManage
           ? FloatingActionButton(
               onPressed: _showAddDialog,

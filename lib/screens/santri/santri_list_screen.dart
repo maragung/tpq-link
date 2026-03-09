@@ -30,11 +30,12 @@ class _SantriListScreenState extends State<SantriListScreen> {
     final santriProv = context.watch<SantriProvider>();
     final santriList = _filterSantri(santriProv.santriList);
 
-    return Column(
-      children: [
-        // Search & Filter Bar
-        Container(
-          padding: const EdgeInsets.fromLTRB(16, 8, 16, 0),
+    return SafeArea(
+      top: false,
+      child: Column(
+        children: [
+          Container(
+            padding: const EdgeInsets.fromLTRB(16, 8, 16, 0),
           color: Colors.white,
           child: Column(
             children: [
@@ -197,6 +198,7 @@ class _SantriListScreenState extends State<SantriListScreen> {
                     ),
         ),
       ],
+    ),
     );
   }
 

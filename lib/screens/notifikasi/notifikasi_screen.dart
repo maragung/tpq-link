@@ -48,10 +48,12 @@ class _NotifikasiScreenState extends State<NotifikasiScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(title: const Text('Notifikasi')),
-      body: _loading
-          ? const Center(child: CircularProgressIndicator())
-          : RefreshIndicator(
-              onRefresh: _fetch,
+      body: SafeArea(
+        top: false,
+        child: _loading
+            ? const Center(child: CircularProgressIndicator())
+            : RefreshIndicator(
+                onRefresh: _fetch,
               child: _notifikasiList.isEmpty
                   ? const Center(
                       child: Column(
@@ -95,7 +97,8 @@ class _NotifikasiScreenState extends State<NotifikasiScreen> {
                         );
                       },
                     ),
-            ),
+              ),
+        ),
     );
   }
 }

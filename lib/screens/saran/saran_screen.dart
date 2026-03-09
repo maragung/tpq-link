@@ -61,10 +61,12 @@ class _SaranScreenState extends State<SaranScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(title: const Text('Kotak Saran')),
-      body: _loading
-          ? const Center(child: CircularProgressIndicator())
-          : RefreshIndicator(
-              onRefresh: _fetch,
+      body: SafeArea(
+        top: false,
+        child: _loading
+            ? const Center(child: CircularProgressIndicator())
+            : RefreshIndicator(
+                onRefresh: _fetch,
               child: _saranList.isEmpty
                   ? const Center(
                       child: Column(
@@ -166,6 +168,7 @@ class _SaranScreenState extends State<SaranScreen> {
                       },
                     ),
             ),
+        ),
     );
   }
 }

@@ -153,7 +153,7 @@ class _AbsensiScreenState extends State<AbsensiScreen> {
             ),
         ],
       ),
-      body: Column(
+      body: SafeArea(top: false, child: Column(
         children: [
           // Date picker header
           InkWell(
@@ -266,6 +266,7 @@ class _AbsensiScreenState extends State<AbsensiScreen> {
                       ),
           ),
         ],
+      ),
       ),
     );
   }

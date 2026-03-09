@@ -31,8 +31,10 @@ class _JurnalScreenState extends State<JurnalScreen> {
 
   @override
   Widget build(BuildContext context) {
-    return _loading
-        ? const Center(child: CircularProgressIndicator())
+    return SafeArea(
+      top: false,
+      child: _loading
+          ? const Center(child: CircularProgressIndicator())
         : RefreshIndicator(
             onRefresh: _fetch,
             child: _jurnalList.isEmpty
@@ -98,6 +100,7 @@ class _JurnalScreenState extends State<JurnalScreen> {
                       );
                     },
                   ),
-          );
+                  ),
+    );
   }
 }

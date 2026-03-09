@@ -169,7 +169,7 @@ class _InfakScreenState extends State<InfakScreen> {
     final canManage =
         Provider.of<AuthProvider>(context).user?.isFullAccess ?? false;
     return Scaffold(
-      body: _loading
+      body: SafeArea(top: false, child: _loading
           ? const Column(
               children: [
                 SkeletonSummaryCard(),
@@ -214,7 +214,7 @@ class _InfakScreenState extends State<InfakScreen> {
                             child: Text('Belum ada data infak',
                                 style: TextStyle(color: AppColors.textSecondary)))
                         : ListView.builder(
-                            padding: const EdgeInsets.symmetric(horizontal: 16),
+                            padding: const EdgeInsets.fromLTRB(16, 0, 16, 80),
                             itemCount: _infakList.length,
                             itemBuilder: (context, index) {
                               final infak = _infakList[index];
@@ -252,6 +252,7 @@ class _InfakScreenState extends State<InfakScreen> {
                 ],
               ),
             ),
+        ),
       floatingActionButton: canManage
           ? FloatingActionButton(
               onPressed: _showAddDialog,

@@ -57,11 +57,13 @@ class _PengaturanScreenState extends State<PengaturanScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(title: const Text('Pengaturan')),
-      body: _loading
-          ? const Center(child: CircularProgressIndicator())
-          : RefreshIndicator(
-              onRefresh: _fetch,
-              child: ListView(
+      body: SafeArea(
+        top: false,
+        child: _loading
+            ? const Center(child: CircularProgressIndicator())
+            : RefreshIndicator(
+                onRefresh: _fetch,
+                child: ListView(
                 padding: const EdgeInsets.all(16),
                 children: [
                   _buildSettingCard(
@@ -102,6 +104,7 @@ class _PengaturanScreenState extends State<PengaturanScreen> {
                 ],
               ),
             ),
+        ),
     );
   }
 

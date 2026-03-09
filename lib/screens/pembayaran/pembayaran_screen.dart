@@ -16,8 +16,10 @@ class PembayaranScreen extends StatelessWidget {
     final canManage =
         context.watch<AuthProvider>().user?.isFullAccess ?? false;
 
-    return Column(
-      children: [
+    return SafeArea(
+      top: false,
+      child: Column(
+        children: [
         // Year selector
         Container(
           padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
@@ -162,6 +164,7 @@ class PembayaranScreen extends StatelessWidget {
                     ),
         ),
       ],
+    ),
     );
   }
 }
