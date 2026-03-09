@@ -14,8 +14,6 @@ class AbsensiProvider with ChangeNotifier {
   bool get loading => _loading;
   String? get error => _error;
 
-  final ApiService _api = ApiService();
-
   /// Ambil data absensi per tanggal
   Future<void> fetchAbsensi({required String tanggal}) async {
     _loading = true;
@@ -23,7 +21,7 @@ class AbsensiProvider with ChangeNotifier {
     notifyListeners();
 
     try {
-      final res = await _api.get('${ApiConfig.absensiUrl}?tanggal=$tanggal');
+      final res = await ApiService.get('${ApiConfig.absensiUrl}?tanggal=$tanggal');
       if (res['success'] == true) {
         final list = (res['data'] as List?) ?? [];
         _absensiList = list.map((e) => Absensi.fromJson(e)).toList();
@@ -50,7 +48,7 @@ class AbsensiProvider with ChangeNotifier {
     notifyListeners();
 
     try {
-      final res = await _api.post(ApiConfig.absensiUrl, {
+      final res = await ApiService.post(ApiConfig.absensiUrl, body: {
         'tanggal': tanggal,
         'data': data,
         'pin': pin,

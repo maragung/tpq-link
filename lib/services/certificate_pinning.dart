@@ -1,4 +1,5 @@
 import 'dart:io';
+import 'package:crypto/crypto.dart';
 import 'package:flutter/foundation.dart';
 import 'package:http/http.dart' as http;
 import 'package:http/io_client.dart';
@@ -47,10 +48,7 @@ class CertificatePinning {
       if (port != 443) return false;
 
       // SHA-256 fingerprint of the presented certificate (hex, lowercase)
-      final fingerprint = cert.sha256
-          .map((b) => b.toRadixString(16).padLeft(2, '0'))
-          .join()
-          .toLowerCase();
+      final fingerprint = sha256.convert(cert.der).toString();
 
       if (_trustedFingerprints.contains(fingerprint)) {
         return true; // cert matches — allow connection

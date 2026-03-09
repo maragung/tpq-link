@@ -36,10 +36,11 @@ class _AbsensiScreenState extends State<AbsensiScreen> {
     final santriProv = context.read<SantriProvider>();
 
     // Load santri list + current absensi
-    await Future.wait([
+    final futures = <Future<void>>[
       absensiProv.fetchAbsensi(tanggal: tanggal),
-      if (santriProv.santriList.isEmpty) santriProv.fetchSantri(),
-    ]);
+      if (santriProv.santriList.isEmpty) santriProv.fetchSantriStatus(),
+    ];
+    await Future.wait(futures);
 
     // Populate map from fetched data
     setState(() {
@@ -79,10 +80,7 @@ class _AbsensiScreenState extends State<AbsensiScreen> {
   }
 
   Future<void> _simpan() async {
-    final pin = await showDialog<String>(
-      context: context,
-      builder: (_) => const PinDialog(title: 'Verifikasi PIN', message: 'Masukkan PIN untuk menyimpan absensi'),
-    );
+    final pin = await showPinDialog(context, title: 'Verifikasi PIN');
     if (pin == null || pin.isEmpty) return;
 
     final santriProv = context.read<SantriProvider>();
