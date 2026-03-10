@@ -1,5 +1,6 @@
 import 'dart:async';
 import 'dart:convert';
+import 'package:connectivity_plus/connectivity_plus.dart';
 import 'package:http/http.dart' as http;
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import '../utils/constants.dart';
@@ -61,8 +62,20 @@ class ApiService {
     return headers;
   }
 
+  /// Returns true when the device has any network connectivity.
+  static Future<bool> _isConnected() async {
+    final results = await Connectivity().checkConnectivity();
+    return results.isNotEmpty &&
+        !results.every((r) => r == ConnectivityResult.none);
+  }
+
+  static const _msgNoInternet = 'Tidak ada koneksi internet. Periksa jaringan Anda dan coba lagi.';
+
   static Future<Map<String, dynamic>> get(String url,
       {Map<String, String>? queryParams}) async {
+    if (!await _isConnected()) {
+      return {'success': false, 'pesan': _msgNoInternet};
+    }
     try {
       var uri = Uri.parse(url);
       if (queryParams != null) {
@@ -79,6 +92,9 @@ class ApiService {
 
   static Future<Map<String, dynamic>> post(String url,
       {Map<String, dynamic>? body}) async {
+    if (!await _isConnected()) {
+      return {'success': false, 'pesan': _msgNoInternet};
+    }
     try {
       final response = await _client
           .post(Uri.parse(url), headers: _headers, body: jsonEncode(body ?? {}))
@@ -91,6 +107,9 @@ class ApiService {
 
   static Future<Map<String, dynamic>> put(String url,
       {Map<String, dynamic>? body}) async {
+    if (!await _isConnected()) {
+      return {'success': false, 'pesan': _msgNoInternet};
+    }
     try {
       final response = await _client
           .put(Uri.parse(url), headers: _headers, body: jsonEncode(body ?? {}))
@@ -103,6 +122,9 @@ class ApiService {
 
   static Future<Map<String, dynamic>> delete(String url,
       {Map<String, dynamic>? body}) async {
+    if (!await _isConnected()) {
+      return {'success': false, 'pesan': _msgNoInternet};
+    }
     try {
       final request = http.Request('DELETE', Uri.parse(url));
       request.headers.addAll(_headers);

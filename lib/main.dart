@@ -3,6 +3,7 @@ import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 import 'package:uni_links/uni_links.dart';
 import 'dart:async';
+import 'dart:ui';
 
 import 'providers/auth_provider.dart';
 import 'providers/santri_provider.dart';
@@ -32,6 +33,19 @@ import 'utils/constants.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
+
+  // Global Flutter error handler
+  FlutterError.onError = (FlutterErrorDetails details) {
+    FlutterError.presentError(details);
+    debugPrint('FlutterError: ${details.exceptionAsString()}');
+  };
+
+  // Handle errors outside Flutter framework (e.g. Dart async errors)
+  PlatformDispatcher.instance.onError = (Object error, StackTrace stack) {
+    debugPrint('PlatformDispatcher error: $error\n$stack');
+    return true; // handled
+  };
+
   await BackgroundService.initialize();
   runApp(const TPQApp());
 }
