@@ -159,6 +159,19 @@ class _BayarSPPScreenState extends State<BayarSPPScreen> {
     );
   }
 
+  Widget _infoBadge(String text, Color textColor, Color bgColor) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+      decoration: BoxDecoration(
+        color: bgColor,
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: textColor.withAlpha(77)),
+      ),
+      child: Text(text,
+          style: TextStyle(fontSize: 10, color: textColor, fontWeight: FontWeight.w600)),
+    );
+  }
+
   @override
   void dispose() {
     _keteranganController.dispose();
@@ -172,6 +185,15 @@ class _BayarSPPScreenState extends State<BayarSPPScreen> {
       final wajib = status?['wajib'] == true;
       final dibayar = status?['dibayar'] == true;
       if (wajib && !dibayar) return bulan;
+    }
+    return null;
+  }
+
+  /// First month this santri is required to pay in the selected year
+  int? _getBulanMulai(dynamic santri) {
+    for (int bulan = 1; bulan <= 12; bulan++) {
+      final status = santri.bulanStatus['$bulan'];
+      if (status?['wajib'] == true) return bulan;
     }
     return null;
   }
@@ -335,6 +357,32 @@ class _BayarSPPScreenState extends State<BayarSPPScreen> {
                                   fontSize: 11, color: AppColors.textSecondary),
                             ),
                           ],
+                          const SizedBox(height: 8),
+                          // Badges: wajib mulai & tunggakan
+                          Builder(builder: (_) {
+                            final bulanMulai = _getBulanMulai(selectedSantri);
+                            final earliest = _getEarliestUnpaid(selectedSantri);
+                            return Wrap(spacing: 6, runSpacing: 4, children: [
+                              if (bulanMulai != null)
+                                _infoBadge(
+                                  'Wajib bayar mulai: ${namaBulan(bulanMulai)}',
+                                  Colors.amber.shade700,
+                                  Colors.amber.shade50,
+                                ),
+                              if (earliest != null)
+                                _infoBadge(
+                                  'Tunggakan dari: ${namaBulan(earliest)}',
+                                  Colors.red.shade700,
+                                  Colors.red.shade50,
+                                )
+                              else if (selectedSantri.bulanWajib > 0)
+                                _infoBadge(
+                                  '✓ Lunas $_tahun',
+                                  Colors.green.shade700,
+                                  Colors.green.shade50,
+                                ),
+                            ]);
+                          }),
                         ],
                       ),
                     ),
@@ -360,11 +408,15 @@ class _BayarSPPScreenState extends State<BayarSPPScreen> {
                         return DropdownMenuItem(value: year, child: Text('$year'));
                       }),
                       onChanged: (v) {
+                        if (v == null) return;
                         setState(() {
-                          _tahun = v ?? _tahun;
+                          _tahun = v;
                           _selectedBulan.clear();
                           _paidPayments.clear();
                         });
+                        // Update provider year → triggers fetchSantriStatus
+                        // so bulan_status reflects the newly selected year
+                        context.read<SantriProvider>().selectedYear = v;
                         if (_selectedSantriId != null) {
                           _fetchPaidPayments(_selectedSantriId!);
                         }
@@ -434,6 +486,35 @@ class _BayarSPPScreenState extends State<BayarSPPScreen> {
                               style: TextStyle(fontSize: 11, color: AppColors.success),
                             )),
                           ]),
+                          // Dynamic badges: wajib mulai + tunggakan
+                          Builder(builder: (_) {
+                            final bulanMulai = _getBulanMulai(selectedSantri);
+                            final earliest  = _getEarliestUnpaid(selectedSantri);
+                            if (bulanMulai == null && earliest == null) return const SizedBox();
+                            return Padding(
+                              padding: const EdgeInsets.only(top: 6, left: 18),
+                              child: Wrap(spacing: 6, runSpacing: 4, children: [
+                                if (bulanMulai != null)
+                                  _infoBadge(
+                                    '📅 Wajib mulai: ${namaBulan(bulanMulai)}',
+                                    Colors.amber.shade800,
+                                    Colors.amber.shade50,
+                                  ),
+                                if (earliest != null)
+                                  _infoBadge(
+                                    '⚠ Tunggakan dari: ${namaBulan(earliest)}',
+                                    Colors.red.shade700,
+                                    Colors.red.shade50,
+                                  )
+                                else if (selectedSantri.bulanWajib > 0)
+                                  _infoBadge(
+                                    '✓ Lunas $_tahun',
+                                    Colors.green.shade700,
+                                    Colors.green.shade50,
+                                  ),
+                              ]),
+                            );
+                          }),
                         ],
                       ],
                     ),
@@ -478,7 +559,7 @@ class _BayarSPPScreenState extends State<BayarSPPScreen> {
                       ],
                     ),
                     const SizedBox(height: 4),
-                    Text(
+                    const Text(
                       'Ketuk bulan ✓ hijau pada grid di atas untuk melihat detail dan opsi batalkan.',
                       style: TextStyle(
                           fontSize: 11, color: AppColors.textSecondary),
