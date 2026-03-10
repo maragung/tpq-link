@@ -79,6 +79,10 @@ class ApiConfig {
   // Absensi
   static String get absensiUrl => '$baseUrl/absensi';
 
+  // Buku Prestasi Santri
+  static String get prestasiSantriUrl => '$baseUrl/prestasi-santri';
+  static String prestasiSantriDetailUrl(dynamic id) => '$baseUrl/prestasi-santri/$id';
+
   // Email Server (Developer only)
   static String get emailServerUrl => '$baseUrl/email-server';
   static String emailServerDetailUrl(dynamic id) => '$baseUrl/email-server/$id';

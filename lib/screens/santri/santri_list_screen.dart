@@ -22,7 +22,7 @@ class _SantriListScreenState extends State<SantriListScreen> {
   String _searchQuery = '';
   final Set<String> _selectedKategori = <String>{};
   final Set<String> _selectedJilid = <String>{};
-  _SantriSortBy _sortBy = _SantriSortBy.nama;
+  _SantriSortBy _sortBy = _SantriSortBy.noAbsen;
   bool _sortAsc = true;
 
   @override
@@ -161,7 +161,7 @@ class _SantriListScreenState extends State<SantriListScreen> {
                         setState(() {
                           _selectedKategori.clear();
                           _selectedJilid.clear();
-                          _sortBy = _SantriSortBy.nama;
+                          _sortBy = _SantriSortBy.noAbsen;
                           _sortAsc = true;
                         });
                       },
@@ -373,9 +373,9 @@ class _SantriListScreenState extends State<SantriListScreen> {
   }
 
   void _showSantriActions(BuildContext context, dynamic s) {
-    final canManage =
-        Provider.of<AuthProvider>(context, listen: false).user?.isFullAccess ??
-            false;
+    final user = Provider.of<AuthProvider>(context, listen: false).user;
+    final canManageStatus = user?.canManageSantriStatus ?? false;
+    final canEditSantri = user?.canEditSantri ?? false;
     showModalBottomSheet(
       context: context,
       shape: const RoundedRectangleBorder(
@@ -459,7 +459,7 @@ class _SantriListScreenState extends State<SantriListScreen> {
                       arguments: {'santri_id': s.id, 'nama': s.namaLengkap});
                 },
               ),
-              if (canManage) ...[
+              if (canEditSantri) ...[
                 ListTile(
                   leading: const CircleAvatar(
                     backgroundColor: Color(0xFFDBEAFE),
@@ -473,6 +473,8 @@ class _SantriListScreenState extends State<SantriListScreen> {
                     Navigator.pushNamed(context, '/santri/tambah', arguments: s.id);
                   },
                 ),
+              ],
+              if (canManageStatus) ...[
                 ListTile(
                   leading: CircleAvatar(
                     backgroundColor: s.statusAktif
@@ -602,9 +604,9 @@ class _SantriListScreenState extends State<SantriListScreen> {
   }
 
   void _showSantriDetail(BuildContext context, dynamic s) {
-    final canManage =
-        Provider.of<AuthProvider>(context, listen: false).user?.isFullAccess ??
-            false;
+    final user = Provider.of<AuthProvider>(context, listen: false).user;
+    final canManageStatus = user?.canManageSantriStatus ?? false;
+    final canEditSantri = user?.canEditSantri ?? false;
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
@@ -735,48 +737,50 @@ class _SantriListScreenState extends State<SantriListScreen> {
               const SizedBox(height: 20),
 
               // Action buttons
-              if (canManage) ...[
+              if (canEditSantri || canManageStatus) ...[
                 Row(
                   children: [
-                    Expanded(
-                      child: OutlinedButton.icon(
-                        onPressed: () {
-                          Navigator.pop(context);
-                          Navigator.pushNamed(context, '/santri/tambah',
-                              arguments: s.id);
-                        },
-                        icon: const Icon(Icons.edit, size: 18),
-                        label: const Text('Edit'),
-                      ),
-                    ),
-                    const SizedBox(width: 8),
-                    Expanded(
-                      child: OutlinedButton.icon(
-                        onPressed: () async {
-                          Navigator.pop(context);
-                          _confirmStatusChange(
-                              context, s, s.statusAktif ? 'nonaktif' : 'aktifkan');
-                        },
-                        icon: Icon(
-                          s.statusAktif ? Icons.person_off : Icons.person_add,
-                          size: 18,
-                          color: s.statusAktif ? AppColors.danger : AppColors.success,
-                        ),
-                        label: Text(
-                          s.statusAktif ? 'Nonaktifkan' : 'Aktifkan',
-                          style: TextStyle(
-                              color: s.statusAktif
-                                  ? AppColors.danger
-                                  : AppColors.success),
-                        ),
-                        style: OutlinedButton.styleFrom(
-                          side: BorderSide(
-                              color: s.statusAktif
-                                  ? AppColors.danger
-                                  : AppColors.success),
+                    if (canEditSantri)
+                      Expanded(
+                        child: OutlinedButton.icon(
+                          onPressed: () {
+                            Navigator.pop(context);
+                            Navigator.pushNamed(context, '/santri/tambah',
+                                arguments: s.id);
+                          },
+                          icon: const Icon(Icons.edit, size: 18),
+                          label: Text((user?.isPengajar ?? false) ? 'Ubah Jilid' : 'Edit'),
                         ),
                       ),
-                    ),
+                    if (canEditSantri && canManageStatus) const SizedBox(width: 8),
+                    if (canManageStatus)
+                      Expanded(
+                        child: OutlinedButton.icon(
+                          onPressed: () async {
+                            Navigator.pop(context);
+                            _confirmStatusChange(
+                                context, s, s.statusAktif ? 'nonaktif' : 'aktifkan');
+                          },
+                          icon: Icon(
+                            s.statusAktif ? Icons.person_off : Icons.person_add,
+                            size: 18,
+                            color: s.statusAktif ? AppColors.danger : AppColors.success,
+                          ),
+                          label: Text(
+                            s.statusAktif ? 'Nonaktifkan' : 'Aktifkan',
+                            style: TextStyle(
+                                color: s.statusAktif
+                                    ? AppColors.danger
+                                    : AppColors.success),
+                          ),
+                          style: OutlinedButton.styleFrom(
+                            side: BorderSide(
+                                color: s.statusAktif
+                                    ? AppColors.danger
+                                    : AppColors.success),
+                          ),
+                        ),
+                      ),
                   ],
                 ),
                 const SizedBox(height: 8),

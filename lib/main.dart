@@ -28,6 +28,8 @@ import 'screens/alumni/alumni_screen.dart';
 import 'screens/keuangan/keuangan_screen.dart';
 import 'screens/laporan/laporan_screen.dart';
 import 'screens/pembayaran/pembayaran_lain_screen.dart';
+import 'screens/prestasi/prestasi_santri_screen.dart';
+import 'screens/akun/akun_screen.dart';
 import 'services/background_service.dart';
 import 'utils/constants.dart';
 
@@ -274,6 +276,8 @@ class _TPQAppState extends State<TPQApp> {
               '/saran': (_) => const SaranScreen(),
               '/pengaturan': (_) => const PengaturanScreen(),
               '/notifikasi': (_) => const NotifikasiScreen(),
+              '/prestasi-santri': (_) => const PrestasiSantriScreen(),
+              '/akun': (_) => const AkunScreen(),
               '/absensi': (_) => const AbsensiScreen(),
               '/alumni': (_) => const AlumniScreen(),
               '/keuangan': (_) => const KeuanganScreen(),
@@ -297,26 +301,43 @@ class MainScreen extends StatefulWidget {
 class _MainScreenState extends State<MainScreen> {
   int _currentIndex = 0;
 
-  final List<Widget> _screens = const [
-    DashboardScreen(),
-    SantriListScreen(),
-    PembayaranScreen(),
-    BayarSPPScreen(embedded: true),
-    JurnalScreen(),
-  ];
-
-  final List<String> _titles = const [
-    'Dashboard',
-    'Data Santri',
-    'Pembayaran',
-    'Bayar SPP',
-    'Jurnal Kas',
-  ];
-
   @override
   Widget build(BuildContext context) {
     final auth = Provider.of<AuthProvider>(context);
     final canManage = auth.user?.isFullAccess ?? false;
+    final isPengajar = auth.user?.isPengajar ?? false;
+
+    final screens = isPengajar
+        ? const [
+            PrestasiSantriScreen(embedded: true),
+            SantriListScreen(),
+            SaranScreen(),
+            NotifikasiScreen(embedded: true),
+            AkunScreen(embedded: true),
+          ]
+        : const [
+            DashboardScreen(),
+            SantriListScreen(),
+            PembayaranScreen(),
+            BayarSPPScreen(embedded: true),
+            JurnalScreen(),
+          ];
+
+    final titles = isPengajar
+        ? const [
+            'Buku Prestasi Santri',
+            'Data Santri',
+            'Kotak Saran',
+            'Notifikasi',
+            'Akun',
+          ]
+        : const [
+            'Dashboard',
+            'Data Santri',
+            'Pembayaran',
+            'Bayar SPP',
+            'Jurnal Kas',
+          ];
 
     return PopScope(
       canPop: false,
@@ -345,16 +366,20 @@ class _MainScreenState extends State<MainScreen> {
       },
       child: Scaffold(
         appBar: AppBar(
-          title: Text(_titles[_currentIndex]),
+          title: Text(titles[_currentIndex]),
           actions: [
-            IconButton(
-              icon: const Icon(Icons.notifications_outlined),
-              onPressed: () => Navigator.pushNamed(context, '/notifikasi'),
-            ),
+            if (!isPengajar)
+              IconButton(
+                icon: const Icon(Icons.notifications_outlined),
+                onPressed: () => Navigator.pushNamed(context, '/notifikasi'),
+              ),
             PopupMenuButton<String>(
               icon: const Icon(Icons.more_vert),
               onSelected: (value) {
                 switch (value) {
+                  case 'akun':
+                    Navigator.pushNamed(context, '/akun');
+                    break;
                   case 'pengaturan':
                     Navigator.pushNamed(context, '/pengaturan');
                     break;
@@ -373,16 +398,19 @@ class _MainScreenState extends State<MainScreen> {
                 }
               },
               itemBuilder: (_) => [
-                const PopupMenuItem(
-                    value: 'absensi', child: Text('Absensi')),
-                if (canManage)
+                if (!isPengajar)
+                  const PopupMenuItem(
+                      value: 'absensi', child: Text('Absensi')),
+                if (!isPengajar && canManage)
                   const PopupMenuItem(
                       value: 'pengeluaran', child: Text('Pengeluaran')),
-                if (canManage)
+                if (!isPengajar && canManage)
                   const PopupMenuItem(value: 'saran', child: Text('Kotak Saran')),
-                if (canManage)
+                if (!isPengajar && canManage)
                   const PopupMenuItem(
                       value: 'pengaturan', child: Text('Pengaturan')),
+                if (!isPengajar)
+                  const PopupMenuItem(value: 'akun', child: Text('Akun')),
                 const PopupMenuItem(
                   value: 'logout',
                   child: Text('Logout', style: TextStyle(color: Colors.red)),
@@ -391,41 +419,69 @@ class _MainScreenState extends State<MainScreen> {
             ),
           ],
         ),
-        body: _screens[_currentIndex],
+        body: screens[_currentIndex],
         bottomNavigationBar: NavigationBar(
           surfaceTintColor: Colors.white,
           selectedIndex: _currentIndex,
           onDestinationSelected: (i) => setState(() => _currentIndex = i),
-          destinations: const [
-            NavigationDestination(
-              icon: Icon(Icons.dashboard_outlined),
-              selectedIcon: Icon(Icons.dashboard),
-              label: 'Dashboard',
-            ),
-            NavigationDestination(
-              icon: Icon(Icons.people_outlined),
-              selectedIcon: Icon(Icons.people),
-              label: 'Santri',
-            ),
-            NavigationDestination(
-              icon: Icon(Icons.receipt_long_outlined),
-              selectedIcon: Icon(Icons.receipt_long),
-              label: 'SPP',
-            ),
-            NavigationDestination(
-              icon: Icon(Icons.payment_outlined),
-              selectedIcon: Icon(Icons.payment),
-              label: 'Bayar SPP',
-            ),
-            NavigationDestination(
-              icon: Icon(Icons.book_outlined),
-              selectedIcon: Icon(Icons.book),
-              label: 'Jurnal',
-            ),
-          ],
+          destinations: isPengajar
+              ? const [
+                  NavigationDestination(
+                    icon: Icon(Icons.menu_book_outlined),
+                    selectedIcon: Icon(Icons.menu_book),
+                    label: 'Prestasi',
+                  ),
+                  NavigationDestination(
+                    icon: Icon(Icons.people_outlined),
+                    selectedIcon: Icon(Icons.people),
+                    label: 'Santri',
+                  ),
+                  NavigationDestination(
+                    icon: Icon(Icons.mail_outline),
+                    selectedIcon: Icon(Icons.mail),
+                    label: 'Saran',
+                  ),
+                  NavigationDestination(
+                    icon: Icon(Icons.notifications_outlined),
+                    selectedIcon: Icon(Icons.notifications),
+                    label: 'Notif',
+                  ),
+                  NavigationDestination(
+                    icon: Icon(Icons.person_outline),
+                    selectedIcon: Icon(Icons.person),
+                    label: 'Akun',
+                  ),
+                ]
+              : const [
+                  NavigationDestination(
+                    icon: Icon(Icons.dashboard_outlined),
+                    selectedIcon: Icon(Icons.dashboard),
+                    label: 'Dashboard',
+                  ),
+                  NavigationDestination(
+                    icon: Icon(Icons.people_outlined),
+                    selectedIcon: Icon(Icons.people),
+                    label: 'Santri',
+                  ),
+                  NavigationDestination(
+                    icon: Icon(Icons.receipt_long_outlined),
+                    selectedIcon: Icon(Icons.receipt_long),
+                    label: 'SPP',
+                  ),
+                  NavigationDestination(
+                    icon: Icon(Icons.payment_outlined),
+                    selectedIcon: Icon(Icons.payment),
+                    label: 'Bayar SPP',
+                  ),
+                  NavigationDestination(
+                    icon: Icon(Icons.book_outlined),
+                    selectedIcon: Icon(Icons.book),
+                    label: 'Jurnal',
+                  ),
+                ],
         ),
         // FAB only visible for roles that can add/edit data
-        floatingActionButton: canManage
+        floatingActionButton: (!isPengajar && canManage)
             ? (_currentIndex == 1
                 ? FloatingActionButton(
                     onPressed: () =>

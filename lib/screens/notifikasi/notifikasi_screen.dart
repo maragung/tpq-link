@@ -58,7 +58,9 @@ String _getAksiLabel(String? aksi) {
 }
 
 class NotifikasiScreen extends StatefulWidget {
-  const NotifikasiScreen({super.key});
+  final bool embedded;
+
+  const NotifikasiScreen({super.key, this.embedded = false});
 
   @override
   State<NotifikasiScreen> createState() => _NotifikasiScreenState();
@@ -113,19 +115,21 @@ class _NotifikasiScreenState extends State<NotifikasiScreen> {
     }
   }
 
+  void _openDetail(Map<String, dynamic> item) {
+    if (widget.embedded) {
+      showModalBottomSheet(
+        context: context,
+        isScrollControlled: true,
+        builder: (_) => _buildDetail(item),
+      );
+      return;
+    }
+    setState(() => _selected = Map<String, dynamic>.from(item));
+  }
+
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(
-        title: const Text('Notifikasi'),
-        actions: [
-          IconButton(
-            icon: const Icon(Icons.refresh),
-            onPressed: () => _fetch(1),
-          ),
-        ],
-      ),
-      body: SafeArea(
+    final content = SafeArea(
         top: false,
         child: _loading
             ? const Center(child: CircularProgressIndicator())
@@ -177,8 +181,7 @@ class _NotifikasiScreenState extends State<NotifikasiScreen> {
                             margin: const EdgeInsets.only(bottom: 8),
                             child: InkWell(
                               borderRadius: BorderRadius.circular(12),
-                              onTap: () =>
-                                  setState(() => _selected = Map<String, dynamic>.from(n)),
+                              onTap: () => _openDetail(Map<String, dynamic>.from(n)),
                               child: Padding(
                                 padding: const EdgeInsets.all(12),
                                 child: Row(
@@ -253,7 +256,23 @@ class _NotifikasiScreenState extends State<NotifikasiScreen> {
                         },
                       ),
               ),
+      );
+
+    if (widget.embedded) {
+      return content;
+    }
+
+    return Scaffold(
+      appBar: AppBar(
+        title: const Text('Notifikasi'),
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.refresh),
+            onPressed: () => _fetch(1),
+          ),
+        ],
       ),
+      body: content,
       // Detail bottom sheet
       bottomSheet: _selected != null ? _buildDetail(_selected!) : null,
     );

@@ -4,7 +4,9 @@ import '../../utils/constants.dart';
 import '../../utils/helpers.dart';
 
 class SaranScreen extends StatefulWidget {
-  const SaranScreen({super.key});
+  final bool embedded;
+
+  const SaranScreen({super.key, this.embedded = false});
 
   @override
   State<SaranScreen> createState() => _SaranScreenState();
@@ -59,9 +61,7 @@ class _SaranScreenState extends State<SaranScreen> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(title: const Text('Kotak Saran')),
-      body: SafeArea(
+    final content = SafeArea(
         top: false,
         child: _loading
             ? const Center(child: CircularProgressIndicator())
@@ -168,7 +168,15 @@ class _SaranScreenState extends State<SaranScreen> {
                       },
                     ),
             ),
-        ),
+        );
+
+    if (widget.embedded) {
+      return content;
+    }
+
+    return Scaffold(
+      appBar: AppBar(title: const Text('Kotak Saran')),
+      body: content,
     );
   }
 }
