@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import '../../services/api_service.dart';
 import '../../utils/constants.dart';
 import '../../utils/helpers.dart';
+import '../../widgets/app_ui.dart';
 
 class JurnalScreen extends StatefulWidget {
   const JurnalScreen({super.key});
@@ -38,16 +39,10 @@ class _JurnalScreenState extends State<JurnalScreen> {
         : RefreshIndicator(
             onRefresh: _fetch,
             child: _jurnalList.isEmpty
-                ? const Center(
-                    child: Column(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        Icon(Icons.book_outlined, size: 64, color: AppColors.textSecondary),
-                        SizedBox(height: 16),
-                        Text('Belum ada data jurnal',
-                            style: TextStyle(color: AppColors.textSecondary)),
-                      ],
-                    ),
+                ? const AppEmptyState(
+                    icon: Icons.book_outlined,
+                    title: 'Belum ada data jurnal',
+                    subtitle: 'Riwayat transaksi kas masuk dan kas keluar akan muncul di sini.',
                   )
                 : ListView.builder(
                     padding: const EdgeInsets.all(16),

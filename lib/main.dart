@@ -136,6 +136,7 @@ class _TPQAppState extends State<TPQApp> {
             navigatorKey: _navigatorKey,
             debugShowCheckedModeBanner: false,
             theme: ThemeData(
+              scaffoldBackgroundColor: AppColors.background,
               colorScheme: ColorScheme.fromSeed(
                 seedColor: AppColors.primary,
                 brightness: Brightness.light,
@@ -146,30 +147,114 @@ class _TPQAppState extends State<TPQApp> {
                 backgroundColor: AppColors.primary,
                 foregroundColor: Colors.white,
                 elevation: 0,
+                centerTitle: false,
+                scrolledUnderElevation: 0,
+                titleTextStyle: TextStyle(
+                  color: Colors.white,
+                  fontSize: 20,
+                  fontWeight: FontWeight.w700,
+                ),
               ),
               elevatedButtonTheme: ElevatedButtonThemeData(
                 style: ElevatedButton.styleFrom(
                   backgroundColor: AppColors.primary,
                   foregroundColor: Colors.white,
                   shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(12),
+                    borderRadius: BorderRadius.circular(16),
                   ),
                   padding:
                       const EdgeInsets.symmetric(horizontal: 24, vertical: 14),
+                  elevation: 0,
                 ),
               ),
+              outlinedButtonTheme: OutlinedButtonThemeData(
+                style: OutlinedButton.styleFrom(
+                  foregroundColor: AppColors.primary,
+                  side: const BorderSide(color: AppColors.border),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(16),
+                  ),
+                  padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 14),
+                ),
+              ),
+              floatingActionButtonTheme: const FloatingActionButtonThemeData(
+                backgroundColor: AppColors.primary,
+                foregroundColor: Colors.white,
+              ),
               inputDecorationTheme: InputDecorationTheme(
+                filled: true,
+                fillColor: Colors.white,
+                labelStyle: const TextStyle(color: AppColors.textSecondary),
+                hintStyle: const TextStyle(color: AppColors.textSecondary),
                 border: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(12),
+                  borderRadius: BorderRadius.circular(16),
+                  borderSide: const BorderSide(color: AppColors.border),
+                ),
+                enabledBorder: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(16),
+                  borderSide: const BorderSide(color: AppColors.border),
+                ),
+                focusedBorder: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(16),
+                  borderSide: const BorderSide(color: AppColors.primary, width: 1.4),
                 ),
                 contentPadding:
                     const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
               ),
               cardTheme: CardThemeData(
-                elevation: 2,
+                color: Colors.white,
+                elevation: 0,
+                shadowColor: Colors.black.withAlpha(12),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(20),
+                  side: const BorderSide(color: AppColors.border),
+                ),
+              ),
+              snackBarTheme: SnackBarThemeData(
+                behavior: SnackBarBehavior.floating,
+                backgroundColor: AppColors.textPrimary,
+                contentTextStyle: const TextStyle(color: Colors.white),
                 shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(16),
                 ),
+              ),
+              chipTheme: ChipThemeData(
+                backgroundColor: Colors.white,
+                selectedColor: AppColors.primary.withAlpha(40),
+                disabledColor: AppColors.border,
+                side: const BorderSide(color: AppColors.border),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(14),
+                ),
+                labelStyle: const TextStyle(color: AppColors.textPrimary),
+                secondaryLabelStyle: const TextStyle(color: AppColors.primary),
+                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+              ),
+              listTileTheme: const ListTileThemeData(
+                contentPadding: EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+                iconColor: AppColors.primary,
+              ),
+              dividerTheme: const DividerThemeData(
+                color: AppColors.border,
+                thickness: 1,
+                space: 1,
+              ),
+              navigationBarTheme: NavigationBarThemeData(
+                height: 72,
+                backgroundColor: Colors.white,
+                shadowColor: Colors.black.withAlpha(10),
+                indicatorColor: AppColors.primary.withAlpha(36),
+                labelTextStyle: WidgetStateProperty.resolveWith((states) {
+                  return TextStyle(
+                    fontSize: 11,
+                    fontWeight: states.contains(WidgetState.selected)
+                        ? FontWeight.w700
+                        : FontWeight.w500,
+                    color: states.contains(WidgetState.selected)
+                        ? AppColors.primary
+                        : AppColors.textSecondary,
+                  );
+                }),
               ),
             ),
             home: auth.isAuthenticated
@@ -308,6 +393,7 @@ class _MainScreenState extends State<MainScreen> {
         ),
         body: _screens[_currentIndex],
         bottomNavigationBar: NavigationBar(
+          surfaceTintColor: Colors.white,
           selectedIndex: _currentIndex,
           onDestinationSelected: (i) => setState(() => _currentIndex = i),
           destinations: const [

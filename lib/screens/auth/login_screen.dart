@@ -4,6 +4,7 @@ import '../../providers/auth_provider.dart';
 import '../../services/api_service.dart';
 import '../../services/biometric_service.dart';
 import '../../utils/constants.dart';
+import '../../widgets/app_ui.dart';
 
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
@@ -103,154 +104,127 @@ class _LoginScreenState extends State<LoginScreen> {
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
                 const SizedBox(height: 40),
-                // Logo & Title
-                Container(
-                  padding: const EdgeInsets.all(20),
-                  decoration: BoxDecoration(
-                    color: AppColors.primary.withAlpha(26),
-                    shape: BoxShape.circle,
-                  ),
-                  child: const Icon(
-                    Icons.mosque_rounded,
-                    size: 64,
-                    color: AppColors.primary,
+                const Center(
+                  child: AppSummaryBanner(
+                    title: 'Sistem Manajemen TPQ',
+                    value: 'TPQ Futuhil Hidayah',
+                    colors: [Color(0xFF10B981), Color(0xFF047857)],
+                    icon: Icons.mosque_rounded,
+                    footnote: 'Masuk untuk mengelola santri, pembayaran, dan laporan.',
                   ),
                 ),
                 const SizedBox(height: 24),
-                const Text(
-                  'TPQ Futuhil Hidayah',
-                  textAlign: TextAlign.center,
-                  style: TextStyle(
-                    fontSize: 24,
-                    fontWeight: FontWeight.bold,
-                    color: AppColors.textPrimary,
-                  ),
+                const AppSectionHeader(
+                  title: 'Masuk ke akun admin',
+                  subtitle: 'Gunakan alamat server, username, dan password untuk mengakses semua aktivitas aplikasi.',
                 ),
-                const Text(
-                  'Wal Hikmah',
-                  textAlign: TextAlign.center,
-                  style: TextStyle(
-                    fontSize: 18,
-                    color: AppColors.textSecondary,
-                  ),
-                ),
-                const SizedBox(height: 8),
-                const Text(
-                  'Masuk ke akun admin Anda',
-                  textAlign: TextAlign.center,
-                  style: TextStyle(color: AppColors.textSecondary),
-                ),
-                const SizedBox(height: 40),
+                const SizedBox(height: 20),
 
-                // Server URL
-                TextFormField(
-                  controller: _serverController,
-                  decoration: const InputDecoration(
-                    labelText: 'Alamat Server',
-                    hintText: 'https://tpq.example.com',
-                    prefixIcon: Icon(Icons.dns_outlined),
-                  ),
-                  keyboardType: TextInputType.url,
-                  validator: (v) {
-                    if (v == null || v.trim().isEmpty) {
-                      return 'Alamat server wajib diisi';
-                    }
-                    final url = v.trim().toLowerCase();
-                    if (!url.startsWith('http://') && !url.startsWith('https://')) {
-                      return 'Harus dimulai dengan http:// atau https://';
-                    }
-                    if (url.startsWith('http://') && !url.contains('localhost') && !url.contains('127.0.0.1')) {
-                      return 'Peringatan: gunakan https:// agar data tidak bisa disadap';
-                    }
-                    return null;
-                  },
-                ),
-                const SizedBox(height: 16),
-
-                // Username
-                TextFormField(
-                  controller: _usernameController,
-                  decoration: const InputDecoration(
-                    labelText: 'Username',
-                    prefixIcon: Icon(Icons.person_outline),
-                  ),
-                  textInputAction: TextInputAction.next,
-                  validator: (v) =>
-                      v == null || v.trim().isEmpty ? 'Username wajib diisi' : null,
-                ),
-                const SizedBox(height: 16),
-
-                // Password
-                TextFormField(
-                  controller: _passwordController,
-                  decoration: InputDecoration(
-                    labelText: 'Password',
-                    prefixIcon: const Icon(Icons.lock_outline),
-                    suffixIcon: IconButton(
-                      icon: Icon(_obscurePassword
-                          ? Icons.visibility_off
-                          : Icons.visibility),
-                      onPressed: () =>
-                          setState(() => _obscurePassword = !_obscurePassword),
-                    ),
-                  ),
-                  obscureText: _obscurePassword,
-                  textInputAction: TextInputAction.done,
-                  onFieldSubmitted: (_) => _login(),
-                  validator: (v) =>
-                      v == null || v.isEmpty ? 'Password wajib diisi' : null,
-                ),
-                const SizedBox(height: 24),
-
-                // Login Button
-                ElevatedButton(
-                  onPressed: _isLoading ? null : _login,
-                  style: ElevatedButton.styleFrom(
-                    padding: const EdgeInsets.symmetric(vertical: 16),
-                  ),
-                  child: _isLoading
-                      ? const SizedBox(
-                          height: 20,
-                          width: 20,
-                          child: CircularProgressIndicator(
-                            strokeWidth: 2,
-                            color: Colors.white,
+                Card(
+                  child: Padding(
+                    padding: const EdgeInsets.all(18),
+                    child: Column(
+                      children: [
+                        TextFormField(
+                          controller: _serverController,
+                          decoration: const InputDecoration(
+                            labelText: 'Alamat Server',
+                            hintText: 'https://tpq.example.com',
+                            prefixIcon: Icon(Icons.dns_outlined),
                           ),
-                        )
-                      : const Text(
-                          'Masuk',
-                          style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                          keyboardType: TextInputType.url,
+                          validator: (v) {
+                            if (v == null || v.trim().isEmpty) {
+                              return 'Alamat server wajib diisi';
+                            }
+                            final url = v.trim().toLowerCase();
+                            if (!url.startsWith('http://') && !url.startsWith('https://')) {
+                              return 'Harus dimulai dengan http:// atau https://';
+                            }
+                            if (url.startsWith('http://') && !url.contains('localhost') && !url.contains('127.0.0.1')) {
+                              return 'Peringatan: gunakan https:// agar data tidak bisa disadap';
+                            }
+                            return null;
+                          },
                         ),
-                ),
-                const SizedBox(height: 16),
-
-                // Divider
-                Row(
-                  children: [
-                    const Expanded(child: Divider()),
-                    Padding(
-                      padding: const EdgeInsets.symmetric(horizontal: 16),
-                      child: Text(
-                        'atau',
-                        style: TextStyle(color: Colors.grey[500]),
-                      ),
-                    ),
-                    const Expanded(child: Divider()),
-                  ],
-                ),
-                const SizedBox(height: 16),
-
-                // QR Code Login Button
-                OutlinedButton.icon(
-                  onPressed: () => Navigator.pushNamed(context, '/qr-scan'),
-                  icon: const Icon(Icons.qr_code_scanner),
-                  label: const Text('Login dengan Scan QR'),
-                  style: OutlinedButton.styleFrom(
-                    padding: const EdgeInsets.symmetric(vertical: 14),
-                    side: const BorderSide(color: AppColors.primary),
-                    foregroundColor: AppColors.primary,
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(12),
+                        const SizedBox(height: 16),
+                        TextFormField(
+                          controller: _usernameController,
+                          decoration: const InputDecoration(
+                            labelText: 'Username',
+                            prefixIcon: Icon(Icons.person_outline),
+                          ),
+                          textInputAction: TextInputAction.next,
+                          validator: (v) =>
+                              v == null || v.trim().isEmpty ? 'Username wajib diisi' : null,
+                        ),
+                        const SizedBox(height: 16),
+                        TextFormField(
+                          controller: _passwordController,
+                          decoration: InputDecoration(
+                            labelText: 'Password',
+                            prefixIcon: const Icon(Icons.lock_outline),
+                            suffixIcon: IconButton(
+                              icon: Icon(_obscurePassword
+                                  ? Icons.visibility_off
+                                  : Icons.visibility),
+                              onPressed: () =>
+                                  setState(() => _obscurePassword = !_obscurePassword),
+                            ),
+                          ),
+                          obscureText: _obscurePassword,
+                          textInputAction: TextInputAction.done,
+                          onFieldSubmitted: (_) => _login(),
+                          validator: (v) =>
+                              v == null || v.isEmpty ? 'Password wajib diisi' : null,
+                        ),
+                        const SizedBox(height: 24),
+                        SizedBox(
+                          width: double.infinity,
+                          child: ElevatedButton(
+                            onPressed: _isLoading ? null : _login,
+                            style: ElevatedButton.styleFrom(
+                              padding: const EdgeInsets.symmetric(vertical: 16),
+                            ),
+                            child: _isLoading
+                                ? const SizedBox(
+                                    height: 20,
+                                    width: 20,
+                                    child: CircularProgressIndicator(
+                                      strokeWidth: 2,
+                                      color: Colors.white,
+                                    ),
+                                  )
+                                : const Text(
+                                    'Masuk',
+                                    style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                                  ),
+                          ),
+                        ),
+                        const SizedBox(height: 16),
+                        Row(
+                          children: [
+                            const Expanded(child: Divider()),
+                            Padding(
+                              padding: const EdgeInsets.symmetric(horizontal: 16),
+                              child: Text(
+                                'atau',
+                                style: TextStyle(color: Colors.grey[500]),
+                              ),
+                            ),
+                            const Expanded(child: Divider()),
+                          ],
+                        ),
+                        const SizedBox(height: 16),
+                        SizedBox(
+                          width: double.infinity,
+                          child: OutlinedButton.icon(
+                            onPressed: () => Navigator.pushNamed(context, '/qr-scan'),
+                            icon: const Icon(Icons.qr_code_scanner),
+                            label: const Text('Login dengan Scan QR'),
+                          ),
+                        ),
+                      ],
                     ),
                   ),
                 ),

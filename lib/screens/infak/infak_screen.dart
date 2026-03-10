@@ -5,6 +5,7 @@ import '../../services/api_service.dart';
 import '../../services/background_service.dart';
 import '../../utils/constants.dart';
 import '../../utils/helpers.dart';
+import '../../widgets/app_ui.dart';
 import '../../widgets/pin_dialog.dart';
 import '../../widgets/skeleton_loader.dart';
 
@@ -181,38 +182,24 @@ class _InfakScreenState extends State<InfakScreen> {
               child: Column(
                 children: [
                   // Total card
-                  Container(
-                    width: double.infinity,
-                    padding: const EdgeInsets.all(20),
-                    margin: const EdgeInsets.all(16),
-                    decoration: BoxDecoration(
-                      gradient: const LinearGradient(
-                        colors: [Color(0xFFEC4899), Color(0xFFDB2777)],
-                      ),
-                      borderRadius: BorderRadius.circular(16),
-                    ),
-                    child: Column(
-                      children: [
-                        const Text('Total Infak/Sedekah',
-                            style: TextStyle(color: Colors.white70, fontSize: 14)),
-                        const SizedBox(height: 4),
-                        Text(
-                          formatCurrency(_totalInfak),
-                          style: const TextStyle(
-                            color: Colors.white,
-                            fontSize: 28,
-                            fontWeight: FontWeight.bold,
-                          ),
-                        ),
-                      ],
+                  Padding(
+                    padding: const EdgeInsets.all(16),
+                    child: AppSummaryBanner(
+                      title: 'Total Infak/Sedekah',
+                      value: formatCurrency(_totalInfak),
+                      colors: const [Color(0xFFEC4899), Color(0xFFBE185D)],
+                      icon: Icons.favorite,
+                      footnote: '${_infakList.length} transaksi tercatat',
                     ),
                   ),
                   // List
                   Expanded(
                     child: _infakList.isEmpty
-                        ? const Center(
-                            child: Text('Belum ada data infak',
-                                style: TextStyle(color: AppColors.textSecondary)))
+                        ? const AppEmptyState(
+                            icon: Icons.favorite_border,
+                            title: 'Belum ada data infak',
+                            subtitle: 'Infak dan sedekah yang diterima akan tampil pada halaman ini.',
+                          )
                         : ListView.builder(
                             padding: const EdgeInsets.fromLTRB(16, 0, 16, 80),
                             itemCount: _infakList.length,

@@ -50,28 +50,43 @@ class SkeletonListTile extends StatelessWidget {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    _ShimmerBox(width: MediaQuery.of(context).size.width * 0.45, height: 14),
+                    const _AdaptiveShimmerLine(factor: 0.45, height: 14),
                     const SizedBox(height: 8),
-                    _ShimmerBox(width: MediaQuery.of(context).size.width * 0.6, height: 11),
+                    const _AdaptiveShimmerLine(factor: 0.6, height: 11),
                     if (showSubtitle2) ...[
                       const SizedBox(height: 6),
-                      _ShimmerBox(width: MediaQuery.of(context).size.width * 0.4, height: 11),
+                      const _AdaptiveShimmerLine(factor: 0.4, height: 11),
                     ],
                   ],
                 ),
               ),
               const SizedBox(width: 12),
-              Column(
+              const Column(
                 children: [
-                  const _ShimmerBox(width: 56, height: 14),
-                  const SizedBox(height: 6),
-                  const _ShimmerBox(width: 40, height: 11),
+                  _ShimmerBox(width: 56, height: 14),
+                  SizedBox(height: 6),
+                  _ShimmerBox(width: 40, height: 11),
                 ],
               ),
             ],
           ),
         ),
       ),
+    );
+  }
+}
+
+class _AdaptiveShimmerLine extends StatelessWidget {
+  final double factor;
+  final double height;
+
+  const _AdaptiveShimmerLine({required this.factor, required this.height});
+
+  @override
+  Widget build(BuildContext context) {
+    return _ShimmerBox(
+      width: MediaQuery.of(context).size.width * factor,
+      height: height,
     );
   }
 }

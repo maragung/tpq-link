@@ -5,6 +5,7 @@ import '../../providers/dashboard_provider.dart';
 import '../../providers/santri_provider.dart';
 import '../../utils/constants.dart';
 import '../../utils/helpers.dart';
+import '../../widgets/app_ui.dart';
 import '../../widgets/pin_dialog.dart';
 
 class DashboardScreen extends StatefulWidget {
@@ -46,8 +47,22 @@ class _DashboardScreenState extends State<DashboardScreen> {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             // Welcome Card
-            Card(
-              color: AppColors.primary,
+            Container(
+              decoration: BoxDecoration(
+                gradient: const LinearGradient(
+                  colors: [Color(0xFF10B981), Color(0xFF047857)],
+                  begin: Alignment.topLeft,
+                  end: Alignment.bottomRight,
+                ),
+                borderRadius: BorderRadius.circular(24),
+                boxShadow: [
+                  BoxShadow(
+                    color: AppColors.primary.withAlpha(60),
+                    blurRadius: 24,
+                    offset: const Offset(0, 14),
+                  ),
+                ],
+              ),
               child: Padding(
                 padding: const EdgeInsets.all(20),
                 child: Row(
@@ -108,13 +123,9 @@ class _DashboardScreenState extends State<DashboardScreen> {
             if (dashboard.loading)
               const Center(child: CircularProgressIndicator())
             else if (dashboard.danaData != null) ...[
-              const Text(
-                'Ringkasan Dana',
-                style: TextStyle(
-                  fontSize: 18,
-                  fontWeight: FontWeight.bold,
-                  color: AppColors.textPrimary,
-                ),
+              const AppSectionHeader(
+                title: 'Ringkasan Dana',
+                subtitle: 'Pantau kondisi keuangan utama TPQ secara cepat.',
               ),
               const SizedBox(height: 12),
               Row(
@@ -172,13 +183,9 @@ class _DashboardScreenState extends State<DashboardScreen> {
             const SizedBox(height: 24),
 
             // Santri Summary
-            const Text(
-              'Status Santri',
-              style: TextStyle(
-                fontSize: 18,
-                fontWeight: FontWeight.bold,
-                color: AppColors.textPrimary,
-              ),
+            const AppSectionHeader(
+              title: 'Status Santri',
+              subtitle: 'Lihat total santri, status aktif, dan progres pembayaran.',
             ),
             const SizedBox(height: 12),
             if (santriProv.loading)
@@ -234,13 +241,9 @@ class _DashboardScreenState extends State<DashboardScreen> {
             const SizedBox(height: 24),
 
             // Quick Actions
-            const Text(
-              'Aksi Cepat',
-              style: TextStyle(
-                fontSize: 18,
-                fontWeight: FontWeight.bold,
-                color: AppColors.textPrimary,
-              ),
+            const AppSectionHeader(
+              title: 'Aksi Cepat',
+              subtitle: 'Akses menu penting hanya dengan satu ketukan.',
             ),
             const SizedBox(height: 12),
             GridView.count(

@@ -4,6 +4,7 @@ import '../../providers/pembayaran_provider.dart';
 import '../../providers/auth_provider.dart';
 import '../../utils/constants.dart';
 import '../../utils/helpers.dart';
+import '../../widgets/app_ui.dart';
 import '../../widgets/pin_dialog.dart';
 import '../../widgets/skeleton_loader.dart';
 
@@ -22,9 +23,11 @@ class PembayaranScreen extends StatelessWidget {
         children: [
         // Year selector
         Container(
-          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-          color: Colors.white,
-          child: Row(
+          padding: const EdgeInsets.all(16),
+          child: AppFilterCard(
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+            child: Row(
             children: [
               const Text('Tahun:', style: TextStyle(fontWeight: FontWeight.w500)),
               const SizedBox(width: 8),
@@ -45,6 +48,8 @@ class PembayaranScreen extends StatelessWidget {
               ),
             ],
           ),
+          ),
+        ),
         ),
 
         // Payment list
@@ -52,16 +57,10 @@ class PembayaranScreen extends StatelessWidget {
           child: prov.loading
               ? const SkeletonList(count: 6, showSubtitle2: true)
               : prov.pembayaranList.isEmpty
-                  ? const Center(
-                      child: Column(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          Icon(Icons.receipt_long, size: 64, color: AppColors.textSecondary),
-                          SizedBox(height: 16),
-                          Text('Belum ada pembayaran',
-                              style: TextStyle(color: AppColors.textSecondary)),
-                        ],
-                      ),
+                  ? const AppEmptyState(
+                      icon: Icons.receipt_long,
+                      title: 'Belum ada pembayaran',
+                      subtitle: 'Semua transaksi pembayaran SPP yang tercatat akan tampil di halaman ini.',
                     )
                   : RefreshIndicator(
                       onRefresh: () => prov.fetchPembayaran(),

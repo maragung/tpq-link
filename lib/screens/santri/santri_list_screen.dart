@@ -4,6 +4,7 @@ import '../../providers/santri_provider.dart';
 import '../../providers/auth_provider.dart';
 import '../../utils/constants.dart';
 import '../../utils/helpers.dart';
+import '../../widgets/app_ui.dart';
 import '../../widgets/pin_dialog.dart';
 import '../../widgets/skeleton_loader.dart';
 
@@ -47,8 +48,10 @@ class _SantriListScreenState extends State<SantriListScreen> {
         children: [
           Container(
             padding: const EdgeInsets.fromLTRB(16, 8, 16, 0),
-          color: Colors.white,
-          child: Column(
+          child: AppFilterCard(
+          child: Padding(
+            padding: const EdgeInsets.fromLTRB(14, 10, 14, 10),
+            child: Column(
             children: [
               // Year Selector
               Row(
@@ -217,6 +220,8 @@ class _SantriListScreenState extends State<SantriListScreen> {
               const SizedBox(height: 8),
             ],
           ),
+          ),
+        ),
         ),
 
         // Santri List
@@ -224,15 +229,10 @@ class _SantriListScreenState extends State<SantriListScreen> {
           child: santriProv.loading
               ? const SkeletonList(count: 7, showSubtitle2: false)
               : santriList.isEmpty
-                  ? const Center(
-                      child: Column(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          Icon(Icons.people_outline, size: 64, color: AppColors.textSecondary),
-                          SizedBox(height: 16),
-                          Text('Belum ada data santri', style: TextStyle(color: AppColors.textSecondary)),
-                        ],
-                      ),
+                  ? const AppEmptyState(
+                      icon: Icons.people_outline,
+                      title: 'Belum ada data santri',
+                      subtitle: 'Data santri akan tampil di sini setelah berhasil ditambahkan atau dimuat dari server.',
                     )
                   : RefreshIndicator(
                       onRefresh: () => santriProv.fetchSantriStatus(),
@@ -264,7 +264,7 @@ class _SantriListScreenState extends State<SantriListScreen> {
                                   style: const TextStyle(
                                       fontWeight: FontWeight.w600)),
                               subtitle: Text(
-                                'NIK: ${s.nik} • ${s.jilid ?? "-"}${s.jenisKelamin != null ? ' • ${s.jenisKelamin}' : ''}\nDibayar: ${s.bulanDibayarTotal} bulan • Tahun ini: ${s.bulanTerbayar}/${s.bulanWajib}',
+                                'NIK: ${s.nik} • ${s.jilid ?? "-"}${s.jenisKelamin != null ? ' • ${s.jenisKelamin}' : ''}\nDibayar: ${s.bulanDibayarTotal}/${s.bulanSejakDaftarSampaiKini} • Tahun ini: ${s.bulanTerbayar}/${s.bulanWajib}',
                                 style: const TextStyle(
                                     color: AppColors.textSecondary,
                                     fontSize: 12),
@@ -296,7 +296,7 @@ class _SantriListScreenState extends State<SantriListScreen> {
                                   ),
                                   const SizedBox(height: 4),
                                   Text(
-                                    '${s.bulanDibayarTotal} bln',
+                                    '${s.bulanDibayarTotal}/${s.bulanSejakDaftarSampaiKini}',
                                     style: const TextStyle(
                                       fontSize: 11,
                                       color: AppColors.textSecondary,
@@ -712,7 +712,7 @@ class _SantriListScreenState extends State<SantriListScreen> {
               _DetailRow('Jenis Kelamin', s.jenisKelamin ?? '-'),
               _DetailRow('Jilid', s.jilid ?? '-'),
               if (s.noAbsen != null) _DetailRow('No. Absen', '${s.noAbsen}'),
-              _DetailRow('Dibayar Total', '${s.bulanDibayarTotal} bulan'),
+              _DetailRow('Dibayar Total', '${s.bulanDibayarTotal}/${s.bulanSejakDaftarSampaiKini} bulan'),
               _DetailRow('Nominal SPP', formatCurrency(s.nominalSpp)),
               const Divider(height: 24),
 

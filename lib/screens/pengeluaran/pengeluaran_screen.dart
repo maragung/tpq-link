@@ -5,6 +5,7 @@ import '../../services/api_service.dart';
 import '../../services/background_service.dart';
 import '../../utils/constants.dart';
 import '../../utils/helpers.dart';
+import '../../widgets/app_ui.dart';
 import '../../widgets/pin_dialog.dart';
 import '../../widgets/skeleton_loader.dart';
 
@@ -185,36 +186,22 @@ class _PengeluaranScreenState extends State<PengeluaranScreen> {
               child: Column(
                 children: [
                   Container(
-                    width: double.infinity,
-                    padding: const EdgeInsets.all(20),
                     margin: const EdgeInsets.all(16),
-                    decoration: BoxDecoration(
-                      gradient: const LinearGradient(
-                        colors: [Color(0xFFEF4444), Color(0xFFDC2626)],
-                      ),
-                      borderRadius: BorderRadius.circular(16),
-                    ),
-                    child: Column(
-                      children: [
-                        const Text('Total Pengeluaran',
-                            style: TextStyle(color: Colors.white70, fontSize: 14)),
-                        const SizedBox(height: 4),
-                        Text(
-                          formatCurrency(_totalPengeluaran),
-                          style: const TextStyle(
-                            color: Colors.white,
-                            fontSize: 28,
-                            fontWeight: FontWeight.bold,
-                          ),
-                        ),
-                      ],
+                    child: AppSummaryBanner(
+                      title: 'Total Pengeluaran',
+                      value: formatCurrency(_totalPengeluaran),
+                      colors: const [Color(0xFFEF4444), Color(0xFFB91C1C)],
+                      icon: Icons.money_off,
+                      footnote: '${_pengeluaranList.length} transaksi tercatat',
                     ),
                   ),
                   Expanded(
                     child: _pengeluaranList.isEmpty
-                        ? const Center(
-                            child: Text('Belum ada data pengeluaran',
-                                style: TextStyle(color: AppColors.textSecondary)))
+                        ? const AppEmptyState(
+                            icon: Icons.money_off_csred_outlined,
+                            title: 'Belum ada data pengeluaran',
+                            subtitle: 'Semua transaksi pengeluaran kas akan muncul di sini.',
+                          )
                         : ListView.builder(
                             padding: const EdgeInsets.fromLTRB(16, 0, 16, 80),
                             itemCount: _pengeluaranList.length,

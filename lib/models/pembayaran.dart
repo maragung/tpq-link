@@ -59,6 +59,7 @@ class StatusPembayaran {
   final Map<String, dynamic> bulanStatus;
   final num totalBayar;
   final int bulanDibayarTotal;
+  final int bulanSejakDaftarSampaiKini;
   final int bulanTerbayar;
   final int bulanWajib;
   final int bulanBelumBayar;
@@ -81,6 +82,7 @@ class StatusPembayaran {
     required this.bulanStatus,
     required this.totalBayar,
     required this.bulanDibayarTotal,
+    required this.bulanSejakDaftarSampaiKini,
     required this.bulanTerbayar,
     required this.bulanWajib,
     required this.bulanBelumBayar,
@@ -105,6 +107,7 @@ class StatusPembayaran {
       bulanStatus: Map<String, dynamic>.from(json['bulan_status'] ?? {}),
       totalBayar: json['total_bayar'] ?? 0,
       bulanDibayarTotal: json['bulan_dibayar_total'] ?? 0,
+      bulanSejakDaftarSampaiKini: json['bulan_sejak_daftar_sampai_kini'] ?? 0,
       bulanTerbayar: json['bulan_terbayar'] ?? 0,
       bulanWajib: json['bulan_wajib'] ?? 0,
       bulanBelumBayar: json['bulan_belum_bayar'] ?? 0,
