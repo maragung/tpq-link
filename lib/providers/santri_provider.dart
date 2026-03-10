@@ -9,12 +9,16 @@ import '../providers/auth_provider.dart';
 class SantriProvider extends ChangeNotifier {
   AuthProvider? _auth;
   List<StatusPembayaran> _santriList = [];
+  List<Map<String, dynamic>> _alumniList = [];
   bool _loading = false;
+  bool _alumniLoading = false;
   String? _error;
   int _selectedYear = DateTime.now().year;
 
   List<StatusPembayaran> get santriList => _santriList;
+  List<Map<String, dynamic>> get alumniList => _alumniList;
   bool get loading => _loading;
+  bool get alumniLoading => _alumniLoading;
   String? get error => _error;
   int get selectedYear => _selectedYear;
 
@@ -22,6 +26,7 @@ class SantriProvider extends ChangeNotifier {
     _auth = auth;
     if (auth.isAuthenticated && _santriList.isEmpty) {
       fetchSantriStatus();
+      fetchAlumni();
     }
   }
 
@@ -73,6 +78,57 @@ class SantriProvider extends ChangeNotifier {
       'DELETE', ApiConfig.santriDetailUrl(id), body: {'pin': pin},
     );
     if (result['success'] == true) fetchSantriStatus();
+    return result;
+  }
+
+  Future<Map<String, dynamic>> luluskanSantri(int id, String pin) async {
+    final result = await BackgroundService.enqueueOrExecute(
+      'PUT', ApiConfig.santriDetailUrl(id),
+      body: {'status_lulus': true, 'pin': pin},
+    );
+    if (result['success'] == true) {
+      fetchSantriStatus();
+      fetchAlumni();
+    }
+    return result;
+  }
+
+  Future<Map<String, dynamic>> aktifkanSantri(int id, String pin) async {
+    final result = await BackgroundService.enqueueOrExecute(
+      'PUT', ApiConfig.santriDetailUrl(id),
+      body: {'status_aktif': true, 'pin': pin},
+    );
+    if (result['success'] == true) fetchSantriStatus();
+    return result;
+  }
+
+  Future<void> fetchAlumni() async {
+    if (_auth?.token == null) return;
+    _alumniLoading = true;
+    notifyListeners();
+
+    final result = await ApiService.get(
+      ApiConfig.santriUrl,
+      queryParams: {'status': 'lulus', 'limit': '500'},
+    );
+    if (result['success'] == true) {
+      final data = result['data'] as List? ?? [];
+      _alumniList = data.map((e) => Map<String, dynamic>.from(e)).toList();
+    }
+
+    _alumniLoading = false;
+    notifyListeners();
+  }
+
+  Future<Map<String, dynamic>> batalLulusSantri(int id, String pin) async {
+    final result = await BackgroundService.enqueueOrExecute(
+      'PUT', ApiConfig.santriDetailUrl(id),
+      body: {'status_lulus': false, 'status_aktif': true, 'pin': pin},
+    );
+    if (result['success'] == true) {
+      fetchSantriStatus();
+      fetchAlumni();
+    }
     return result;
   }
 

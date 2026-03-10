@@ -65,6 +65,9 @@ class ApiConfig {
   // Notifikasi
   static String get notifikasiUrl => '$baseUrl/notifikasi';
 
+  // Alumni
+  static String get alumniUrl => '$baseUrl/santri?status=lulus&limit=500';
+
   // Saran
   static String get saranUrl => '$baseUrl/saran';
   static String saranDetailUrl(dynamic id) => '$baseUrl/saran/$id';

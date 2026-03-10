@@ -190,7 +190,7 @@ class _SantriListScreenState extends State<SantriListScreen> {
                                   ),
                                 ],
                               ),
-                              onTap: () => _showSantriDetail(context, s),
+                              onTap: () => _showSantriActions(context, s),
                             ),
                           );
                         },
@@ -227,6 +227,232 @@ class _SantriListScreenState extends State<SantriListScreen> {
       }
     }).toList();
     return filtered;
+  }
+
+  void _showSantriActions(BuildContext context, dynamic s) {
+    final canManage =
+        Provider.of<AuthProvider>(context, listen: false).user?.isFullAccess ??
+            false;
+    showModalBottomSheet(
+      context: context,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      builder: (_) => SafeArea(
+        child: Padding(
+          padding: const EdgeInsets.symmetric(vertical: 8),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Container(
+                width: 40, height: 4,
+                margin: const EdgeInsets.only(bottom: 8),
+                decoration: BoxDecoration(
+                  color: Colors.grey[300],
+                  borderRadius: BorderRadius.circular(2),
+                ),
+              ),
+              Padding(
+                padding: const EdgeInsets.fromLTRB(16, 0, 16, 8),
+                child: Row(
+                  children: [
+                    CircleAvatar(
+                      backgroundColor: s.statusAktif
+                          ? AppColors.primary.withAlpha(51)
+                          : Colors.grey.withAlpha(51),
+                      child: Text(
+                        s.namaLengkap.isNotEmpty ? s.namaLengkap[0].toUpperCase() : '?',
+                        style: TextStyle(
+                          fontWeight: FontWeight.bold,
+                          color: s.statusAktif ? AppColors.primary : Colors.grey,
+                        ),
+                      ),
+                    ),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(s.namaLengkap,
+                              style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 15)),
+                          Text('${s.jilid ?? '-'} • ${s.isSubsidi ? 'Subsidi' : 'Non Subsidi'}',
+                              style: const TextStyle(fontSize: 12, color: AppColors.textSecondary)),
+                        ],
+                      ),
+                    ),
+                    Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                      decoration: BoxDecoration(
+                        color: s.statusAktif ? AppColors.success.withAlpha(26) : AppColors.danger.withAlpha(26),
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                      child: Text(
+                        s.statusAktif ? 'Aktif' : 'Nonaktif',
+                        style: TextStyle(
+                          fontSize: 11,
+                          color: s.statusAktif ? AppColors.success : AppColors.danger,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              const Divider(height: 1),
+              // Bayar SPP
+              ListTile(
+                leading: const CircleAvatar(
+                  backgroundColor: Color(0xFFD1FAE5),
+                  child: Icon(Icons.payment, color: AppColors.primary),
+                ),
+                title: const Text('Bayar SPP',
+                    style: TextStyle(fontWeight: FontWeight.w600)),
+                subtitle: const Text('Catat pembayaran SPP'),
+                onTap: () {
+                  Navigator.pop(context);
+                  Navigator.pushNamed(context, '/bayar-spp',
+                      arguments: {'santri_id': s.id, 'nama': s.namaLengkap});
+                },
+              ),
+              if (canManage) ...[
+                ListTile(
+                  leading: const CircleAvatar(
+                    backgroundColor: Color(0xFFDBEAFE),
+                    child: Icon(Icons.edit, color: Colors.blue),
+                  ),
+                  title: const Text('Edit Santri',
+                      style: TextStyle(fontWeight: FontWeight.w600)),
+                  subtitle: const Text('Ubah data santri'),
+                  onTap: () {
+                    Navigator.pop(context);
+                    Navigator.pushNamed(context, '/santri/tambah', arguments: s.id);
+                  },
+                ),
+                ListTile(
+                  leading: CircleAvatar(
+                    backgroundColor: s.statusAktif
+                        ? AppColors.danger.withAlpha(26)
+                        : AppColors.success.withAlpha(26),
+                    child: Icon(
+                      s.statusAktif ? Icons.person_off : Icons.person_add,
+                      color: s.statusAktif ? AppColors.danger : AppColors.success,
+                    ),
+                  ),
+                  title: Text(
+                    s.statusAktif ? 'Nonaktifkan' : 'Aktifkan Kembali',
+                    style: TextStyle(
+                      fontWeight: FontWeight.w600,
+                      color: s.statusAktif ? AppColors.danger : AppColors.success,
+                    ),
+                  ),
+                  subtitle: Text(s.statusAktif
+                      ? 'Hentikan kewajiban SPP'
+                      : 'Aktifkan kembali santri'),
+                  onTap: () {
+                    Navigator.pop(context);
+                    _confirmStatusChange(context, s, s.statusAktif ? 'nonaktif' : 'aktifkan');
+                  },
+                ),
+                if (s.statusAktif)
+                  ListTile(
+                    leading: const CircleAvatar(
+                      backgroundColor: Color(0xFFFEF3C7),
+                      child: Icon(Icons.school, color: Colors.amber),
+                    ),
+                    title: const Text('Luluskan',
+                        style: TextStyle(
+                            fontWeight: FontWeight.w600, color: Colors.amber)),
+                    subtitle: const Text('Tandai sebagai lulus/alumni'),
+                    onTap: () {
+                      Navigator.pop(context);
+                      _confirmStatusChange(context, s, 'luluskan');
+                    },
+                  ),
+              ],
+              ListTile(
+                leading: const CircleAvatar(
+                  backgroundColor: Color(0xFFF3F4F6),
+                  child: Icon(Icons.info_outline, color: AppColors.textSecondary),
+                ),
+                title: const Text('Lihat Detail',
+                    style: TextStyle(fontWeight: FontWeight.w600)),
+                subtitle: const Text('Status pembayaran & info lengkap'),
+                onTap: () {
+                  Navigator.pop(context);
+                  _showSantriDetail(context, s);
+                },
+              ),
+              const SizedBox(height: 8),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Future<void> _confirmStatusChange(
+      BuildContext context, dynamic s, String action) async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (_) => AlertDialog(
+        title: Text(action == 'luluskan'
+            ? 'Konfirmasi Kelulusan'
+            : action == 'aktifkan'
+                ? 'Aktifkan Santri'
+                : 'Nonaktifkan Santri'),
+        content: Text(
+          action == 'luluskan'
+              ? 'Tandai ${s.namaLengkap} sebagai LULUS? Santri akan dipindahkan ke Alumni.'
+              : action == 'aktifkan'
+                  ? 'Aktifkan kembali santri ${s.namaLengkap}?'
+                  : 'Nonaktifkan santri ${s.namaLengkap}? SPP tidak lagi diwajibkan.',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context, false),
+            child: const Text('Batal'),
+          ),
+          ElevatedButton(
+            onPressed: () => Navigator.pop(context, true),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: action == 'nonaktif'
+                  ? AppColors.danger
+                  : action == 'luluskan'
+                      ? Colors.amber
+                      : AppColors.success,
+            ),
+            child: Text(action == 'luluskan'
+                ? '🎓 Luluskan'
+                : action == 'aktifkan'
+                    ? 'Aktifkan'
+                    : 'Nonaktifkan'),
+          ),
+        ],
+      ),
+    );
+    if (confirmed != true || !context.mounted) return;
+
+    final pin = await showPinDialog(context);
+    if (pin == null || !context.mounted) return;
+
+    final santriProv = Provider.of<SantriProvider>(context, listen: false);
+    Map<String, dynamic> result;
+
+    if (action == 'luluskan') {
+      result = await santriProv.luluskanSantri(s.id, pin);
+    } else if (action == 'aktifkan') {
+      result = await santriProv.aktifkanSantri(s.id, pin);
+    } else {
+      result = await santriProv.deleteSantri(s.id, pin);
+    }
+
+    if (!context.mounted) return;
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(result['pesan'] ?? 'Berhasil'),
+        backgroundColor:
+            result['success'] == true ? AppColors.success : AppColors.danger,
+      ),
+    );
   }
 
   void _showSantriDetail(BuildContext context, dynamic s) {
@@ -361,9 +587,9 @@ class _SantriListScreenState extends State<SantriListScreen> {
               const SizedBox(height: 20),
 
               // Action buttons
-              Row(
-                children: [
-                  if (canManage) ...[
+              if (canManage) ...[
+                Row(
+                  children: [
                     Expanded(
                       child: OutlinedButton.icon(
                         onPressed: () {
@@ -375,77 +601,86 @@ class _SantriListScreenState extends State<SantriListScreen> {
                         label: const Text('Edit'),
                       ),
                     ),
-                    const SizedBox(width: 12),
+                    const SizedBox(width: 8),
                     Expanded(
                       child: OutlinedButton.icon(
                         onPressed: () async {
-                          final confirm = await showDialog<bool>(
-                            context: context,
-                            builder: (_) => AlertDialog(
-                              title: const Text('Nonaktifkan Santri'),
-                              content: Text(
-                                'Yakin ingin menonaktifkan ${s.namaLengkap}?',
-                              ),
-                              actions: [
-                                TextButton(
-                                  onPressed: () => Navigator.pop(context, false),
-                                  child: const Text('Batal'),
-                                ),
-                                ElevatedButton(
-                                  onPressed: () => Navigator.pop(context, true),
-                                  style: ElevatedButton.styleFrom(
-                                    backgroundColor: AppColors.danger,
-                                  ),
-                                  child: const Text('Nonaktifkan'),
-                                ),
-                              ],
-                            ),
-                          );
-                          if (confirm != true || !context.mounted) return;
-
-                          final pin = await showPinDialog(context);
-                          if (pin == null || !context.mounted) return;
-
-                          final result = await Provider.of<SantriProvider>(
-                            context,
-                            listen: false,
-                          ).deleteSantri(s.id, pin);
-
-                          if (!context.mounted) return;
                           Navigator.pop(context);
-                          ScaffoldMessenger.of(context).showSnackBar(
-                            SnackBar(
-                              content: Text(result['pesan'] ?? 'Berhasil'),
-                              backgroundColor: result['success'] == true
-                                  ? AppColors.success
-                                  : AppColors.danger,
-                            ),
-                          );
+                          _confirmStatusChange(
+                              context, s, s.statusAktif ? 'nonaktif' : 'aktifkan');
                         },
-                        icon: const Icon(Icons.person_off, size: 18,
-                            color: AppColors.danger),
-                        label: const Text('Nonaktifkan',
-                            style: TextStyle(color: AppColors.danger)),
+                        icon: Icon(
+                          s.statusAktif ? Icons.person_off : Icons.person_add,
+                          size: 18,
+                          color: s.statusAktif ? AppColors.danger : AppColors.success,
+                        ),
+                        label: Text(
+                          s.statusAktif ? 'Nonaktifkan' : 'Aktifkan',
+                          style: TextStyle(
+                              color: s.statusAktif
+                                  ? AppColors.danger
+                                  : AppColors.success),
+                        ),
                         style: OutlinedButton.styleFrom(
-                          side: const BorderSide(color: AppColors.danger),
+                          side: BorderSide(
+                              color: s.statusAktif
+                                  ? AppColors.danger
+                                  : AppColors.success),
                         ),
                       ),
                     ),
-                    const SizedBox(width: 12),
                   ],
-                  Expanded(
-                    child: ElevatedButton.icon(
-                      onPressed: () {
-                        Navigator.pop(context);
-                        Navigator.pushNamed(context, '/bayar-spp',
-                            arguments: {'santri_id': s.id, 'nama': s.namaLengkap});
-                      },
-                      icon: const Icon(Icons.payment, size: 18),
-                      label: const Text('Bayar SPP'),
+                ),
+                const SizedBox(height: 8),
+                Row(
+                  children: [
+                    if (s.statusAktif) ...[
+                      Expanded(
+                        child: OutlinedButton.icon(
+                          onPressed: () {
+                            Navigator.pop(context);
+                            _confirmStatusChange(context, s, 'luluskan');
+                          },
+                          icon: const Icon(Icons.school, size: 18,
+                              color: Colors.amber),
+                          label: const Text('Luluskan',
+                              style: TextStyle(color: Colors.amber)),
+                          style: OutlinedButton.styleFrom(
+                              side: const BorderSide(color: Colors.amber)),
+                        ),
+                      ),
+                      const SizedBox(width: 8),
+                    ],
+                    Expanded(
+                      child: ElevatedButton.icon(
+                        onPressed: () {
+                          Navigator.pop(context);
+                          Navigator.pushNamed(context, '/bayar-spp',
+                              arguments: {
+                                'santri_id': s.id,
+                                'nama': s.namaLengkap
+                              });
+                        },
+                        icon: const Icon(Icons.payment, size: 18),
+                        label: const Text('Bayar SPP'),
+                      ),
                     ),
+                  ],
+                ),
+              ] else ...[
+                ElevatedButton.icon(
+                  onPressed: () {
+                    Navigator.pop(context);
+                    Navigator.pushNamed(context, '/bayar-spp',
+                        arguments: {'santri_id': s.id, 'nama': s.namaLengkap});
+                  },
+                  icon: const Icon(Icons.payment, size: 18),
+                  label: const Text('Bayar SPP'),
+                  style: ElevatedButton.styleFrom(
+                    minimumSize: const Size(double.infinity, 44),
                   ),
-                ],
-              ),
+                ),
+              ],
             ],
           ),
         ),

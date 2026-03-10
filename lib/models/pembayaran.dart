@@ -60,6 +60,10 @@ class StatusPembayaran {
   final int bulanTerbayar;
   final int bulanWajib;
   final int bulanBelumBayar;
+  final String? tglMendaftar;
+  final String? tglNonaktif;
+  final String? namaWali;
+  final String? noTelpWali;
 
   StatusPembayaran({
     required this.id,
@@ -76,6 +80,10 @@ class StatusPembayaran {
     required this.bulanTerbayar,
     required this.bulanWajib,
     required this.bulanBelumBayar,
+    this.tglMendaftar,
+    this.tglNonaktif,
+    this.namaWali,
+    this.noTelpWali,
   });
 
   factory StatusPembayaran.fromJson(Map<String, dynamic> json) {
@@ -94,6 +102,10 @@ class StatusPembayaran {
       bulanTerbayar: json['bulan_terbayar'] ?? 0,
       bulanWajib: json['bulan_wajib'] ?? 0,
       bulanBelumBayar: json['bulan_belum_bayar'] ?? 0,
+      tglMendaftar: json['tgl_mendaftar'],
+      tglNonaktif: json['tgl_nonaktif'],
+      namaWali: json['nama_wali'],
+      noTelpWali: json['no_telp_wali'],
     );
   }
 }
