@@ -264,7 +264,7 @@ class _SantriListScreenState extends State<SantriListScreen> {
                                   style: const TextStyle(
                                       fontWeight: FontWeight.w600)),
                               subtitle: Text(
-                                'NIK: ${s.nik} • ${s.jilid ?? "-"}${s.jenisKelamin != null ? ' • ${s.jenisKelamin}' : ''}\nDibayar: ${s.bulanDibayarTotal}/${s.bulanSejakDaftarSampaiKini} • Tahun ini: ${s.bulanTerbayar}/${s.bulanWajib}',
+                                'NIK: ${s.nik} • ${s.jilid ?? "-"}${s.jenisKelamin != null ? ' • ${s.jenisKelamin}' : ''}\nTerlunasi: ${s.bulanDibayarTotal}/${s.bulanSejakDaftarSampaiKini} • Tahun ini: ${s.bulanTerbayar}/${s.bulanWajib}',
                                 style: const TextStyle(
                                     color: AppColors.textSecondary,
                                     fontSize: 12),
@@ -712,7 +712,7 @@ class _SantriListScreenState extends State<SantriListScreen> {
               _DetailRow('Jenis Kelamin', s.jenisKelamin ?? '-'),
               _DetailRow('Jilid', s.jilid ?? '-'),
               if (s.noAbsen != null) _DetailRow('No. Absen', '${s.noAbsen}'),
-              _DetailRow('Dibayar Total', '${s.bulanDibayarTotal}/${s.bulanSejakDaftarSampaiKini} bulan'),
+              _DetailRow('Terlunasi', '${s.bulanDibayarTotal}/${s.bulanSejakDaftarSampaiKini} bulan'),
               _DetailRow('Nominal SPP', formatCurrency(s.nominalSpp)),
               const Divider(height: 24),
 
