@@ -82,6 +82,7 @@ class ApiConfig {
   // Buku Prestasi Santri
   static String get prestasiSantriUrl => '$baseUrl/prestasi-santri';
   static String prestasiSantriDetailUrl(dynamic id) => '$baseUrl/prestasi-santri/$id';
+  static String get exportUrl => '$baseUrl/export';
 
   // Email Server (Developer only)
   static String get emailServerUrl => '$baseUrl/email-server';

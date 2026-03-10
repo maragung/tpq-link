@@ -445,7 +445,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                             size: 20,
                           ),
                           onTap: () => _confirmSantriAction(
-                              context, s, actionLabel, actionColor),
+                              context, s, action, actionLabel, actionColor),
                         );
                       },
                     ),
@@ -457,7 +457,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
   }
 
   Future<void> _confirmSantriAction(BuildContext context, dynamic santri,
-      String actionLabel, Color actionColor) async {
+      String action, String actionLabel, Color actionColor) async {
     final confirm = await showDialog<bool>(
       context: context,
       builder: (_) => AlertDialog(
@@ -483,10 +483,13 @@ class _DashboardScreenState extends State<DashboardScreen> {
     final pin = await showPinDialog(context);
     if (pin == null || !context.mounted) return;
 
-    final result = await Provider.of<SantriProvider>(
+    final santriProvider = Provider.of<SantriProvider>(
       context,
       listen: false,
-    ).deleteSantri(santri.id, pin);
+    );
+    final result = action == 'luluskan'
+        ? await santriProvider.luluskanSantri(santri.id, pin)
+        : await santriProvider.nonaktifkanSantri(santri.id, pin);
 
     if (!context.mounted) return;
     Navigator.pop(context); // Close bottom sheet

@@ -18,12 +18,16 @@ class User {
   bool get isFullAccess =>
       jabatan == 'Developer' || jabatan == 'Pimpinan TPQ';
 
-    bool get isPengajar => jabatan == 'Pengajar';
+  bool get isPengajar => jabatan == 'Pengajar';
 
-    bool get canEditSantri =>
+  bool get canEditSantri =>
       isFullAccess || jabatan == 'Sekretaris' || jabatan == 'Bendahara' || isPengajar;
 
-    bool get canManageSantriStatus => isFullAccess || jabatan == 'Sekretaris' || jabatan == 'Bendahara';
+  bool get canManageSantriStatus =>
+      isFullAccess || jabatan == 'Sekretaris' || jabatan == 'Bendahara';
+
+  bool get canDeleteSantri =>
+      isFullAccess || jabatan == 'Sekretaris' || jabatan == 'Bendahara';
 
   /// Returns true only for the Developer super-admin role.
   bool get isDeveloper => jabatan == 'Developer';

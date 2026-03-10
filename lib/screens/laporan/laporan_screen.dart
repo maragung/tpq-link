@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
+import '../../providers/auth_provider.dart';
 import '../../providers/dashboard_provider.dart';
 import '../../providers/santri_provider.dart';
 import '../../services/api_service.dart';
@@ -21,6 +22,8 @@ class _LaporanScreenState extends State<LaporanScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final isPengajar = context.watch<AuthProvider>().user?.isPengajar ?? false;
+
     return Scaffold(
       appBar: AppBar(title: const Text('Laporan / Export')),
       body: SafeArea(top: false, child: SingleChildScrollView(
@@ -67,41 +70,63 @@ class _LaporanScreenState extends State<LaporanScreen> {
             ),
             const SizedBox(height: 12),
 
+            if (isPengajar)
+              Card(
+                color: AppColors.secondary.withAlpha(14),
+                child: const Padding(
+                  padding: EdgeInsets.all(16),
+                  child: Text(
+                    'Mode Pengajar: halaman ini hanya menampilkan data Buku Prestasi Santri.',
+                    style: TextStyle(color: AppColors.textPrimary),
+                  ),
+                ),
+              ),
+            if (isPengajar) const SizedBox(height: 12),
+
             _ReportTile(
-              icon: Icons.people,
-              title: 'Laporan Data Santri',
-              subtitle: 'Daftar lengkap santri aktif & nonaktif',
-              color: AppColors.primary,
-              onTap: _generateSantriReport,
-            ),
-            _ReportTile(
-              icon: Icons.payment,
-              title: 'Laporan Pembayaran SPP',
-              subtitle: 'Rekap pembayaran SPP per tahun',
-              color: AppColors.secondary,
-              onTap: _generatePembayaranReport,
-            ),
-            _ReportTile(
-              icon: Icons.favorite,
-              title: 'Laporan Infak/Sedekah',
-              subtitle: 'Rekap penerimaan infak',
-              color: Colors.pink,
-              onTap: _generateInfakReport,
-            ),
-            _ReportTile(
-              icon: Icons.money_off,
-              title: 'Laporan Pengeluaran',
-              subtitle: 'Rekap pengeluaran TPQ',
-              color: AppColors.warning,
-              onTap: _generatePengeluaranReport,
-            ),
-            _ReportTile(
-              icon: Icons.account_balance_wallet,
-              title: 'Laporan Keuangan',
-              subtitle: 'Ringkasan kas masuk & keluar',
+              icon: Icons.menu_book,
+              title: 'Buku Prestasi Santri',
+              subtitle: 'Rekap Surat Pendek, Doa Harian, dan Halaman Buku Prestasi Jilid',
               color: AppColors.success,
-              onTap: _generateKeuanganReport,
+              onTap: _generatePrestasiReport,
             ),
+            if (!isPengajar) ...[
+              _ReportTile(
+                icon: Icons.people,
+                title: 'Laporan Data Santri',
+                subtitle: 'Daftar lengkap santri aktif & nonaktif',
+                color: AppColors.primary,
+                onTap: _generateSantriReport,
+              ),
+              _ReportTile(
+                icon: Icons.payment,
+                title: 'Laporan Pembayaran SPP',
+                subtitle: 'Rekap pembayaran SPP per tahun',
+                color: AppColors.secondary,
+                onTap: _generatePembayaranReport,
+              ),
+              _ReportTile(
+                icon: Icons.favorite,
+                title: 'Laporan Infak/Sedekah',
+                subtitle: 'Rekap penerimaan infak',
+                color: Colors.pink,
+                onTap: _generateInfakReport,
+              ),
+              _ReportTile(
+                icon: Icons.money_off,
+                title: 'Laporan Pengeluaran',
+                subtitle: 'Rekap pengeluaran TPQ',
+                color: AppColors.warning,
+                onTap: _generatePengeluaranReport,
+              ),
+              _ReportTile(
+                icon: Icons.account_balance_wallet,
+                title: 'Laporan Keuangan',
+                subtitle: 'Ringkasan kas masuk & keluar',
+                color: AppColors.success,
+                onTap: _generateKeuanganReport,
+              ),
+            ],
 
             if (_loading)
               const Padding(
@@ -152,6 +177,56 @@ class _LaporanScreenState extends State<LaporanScreen> {
       ),
       ),
     );
+  }
+
+  Future<void> _generatePrestasiReport() async {
+    setState(() {
+      _loading = true;
+      _generatedReport = null;
+    });
+
+    final result = await ApiService.get(
+      ApiConfig.exportUrl,
+      queryParams: {
+        'tipe': 'prestasi_santri',
+        'tahun': _selectedYear.toString(),
+      },
+    );
+
+    final list = (result['data'] ?? []) as List;
+    if (result['success'] != true) {
+      setState(() {
+        _loading = false;
+        _generatedReport = result['pesan'] ?? 'Gagal memuat Buku Prestasi Santri';
+      });
+      return;
+    }
+
+    final buf = StringBuffer();
+    buf.writeln('BUKU PRESTASI SANTRI - TAHUN $_selectedYear');
+    buf.writeln("TPQ Futuhil Hidayah wan Ni'mah");
+    buf.writeln('=' * 50);
+    buf.writeln('Jumlah Catatan : ${list.length}');
+    buf.writeln('');
+
+    for (var i = 0; i < list.length; i++) {
+      final item = Map<String, dynamic>.from(list[i] as Map);
+      buf.writeln('${i + 1}. ${item['nama_santri'] ?? '-'}');
+      buf.writeln('   No. Absen : ${item['no_absen'] ?? '-'}');
+      buf.writeln('   Tanggal   : ${formatDate(item['tanggal']?.toString())}');
+      buf.writeln('   Jilid     : ${item['jilid'] ?? '-'}');
+      buf.writeln('   Surat/Doa : ${item['surat_doa'] ?? '-'}');
+      buf.writeln('   Halaman   : ${item['halaman'] ?? '-'}');
+      buf.writeln('   Ust       : ${item['ust'] ?? '-'}');
+      buf.writeln('   Paraf     : ${item['paraf'] ?? '-'}');
+      buf.writeln('   Ket.      : ${item['keterangan'] ?? '-'}');
+      buf.writeln('');
+    }
+
+    setState(() {
+      _loading = false;
+      _generatedReport = buf.toString();
+    });
   }
 
   Future<void> _generateSantriReport() async {

@@ -389,6 +389,9 @@ class _MainScreenState extends State<MainScreen> {
                   case 'pengeluaran':
                     Navigator.pushNamed(context, '/pengeluaran');
                     break;
+                  case 'laporan':
+                    Navigator.pushNamed(context, '/laporan');
+                    break;
                   case 'absensi':
                     Navigator.pushNamed(context, '/absensi');
                     break;
@@ -406,6 +409,8 @@ class _MainScreenState extends State<MainScreen> {
                       value: 'pengeluaran', child: Text('Pengeluaran')),
                 if (!isPengajar && canManage)
                   const PopupMenuItem(value: 'saran', child: Text('Kotak Saran')),
+                if (isPengajar || canManage)
+                  const PopupMenuItem(value: 'laporan', child: Text('Laporan / Export')),
                 if (!isPengajar && canManage)
                   const PopupMenuItem(
                       value: 'pengaturan', child: Text('Pengaturan')),

@@ -43,7 +43,10 @@ class SantriProvider extends ChangeNotifier {
 
     final result = await ApiService.get(
       ApiConfig.pembayaranStatusUrl,
-      queryParams: {'tahun': _selectedYear.toString()},
+      queryParams: {
+        'tahun': _selectedYear.toString(),
+        'include_nonaktif': 'true',
+      },
     );
 
     if (result['success'] == true) {
@@ -73,11 +76,23 @@ class SantriProvider extends ChangeNotifier {
     return result;
   }
 
+  Future<Map<String, dynamic>> nonaktifkanSantri(int id, String pin) async {
+    final result = await BackgroundService.enqueueOrExecute(
+      'PUT', ApiConfig.santriDetailUrl(id),
+      body: {'status_aktif': false, 'pin': pin},
+    );
+    if (result['success'] == true) fetchSantriStatus();
+    return result;
+  }
+
   Future<Map<String, dynamic>> deleteSantri(int id, String pin) async {
     final result = await BackgroundService.enqueueOrExecute(
       'DELETE', ApiConfig.santriDetailUrl(id), body: {'pin': pin},
     );
-    if (result['success'] == true) fetchSantriStatus();
+    if (result['success'] == true) {
+      fetchSantriStatus();
+      fetchAlumni();
+    }
     return result;
   }
 

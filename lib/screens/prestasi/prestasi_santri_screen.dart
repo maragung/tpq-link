@@ -26,7 +26,6 @@ class _PrestasiSantriScreenState extends State<PrestasiSantriScreen> {
 
   bool _loading = true;
   bool _saving = false;
-  String _tab = 'surat_doa';
   int _tahun = DateTime.now().year;
   String _bulan = '';
   String _search = '';
@@ -86,16 +85,15 @@ class _PrestasiSantriScreenState extends State<PrestasiSantriScreen> {
       final data = prestasiResult['data'] as List? ?? [];
       _items = data.map((e) => PrestasiSantri.fromJson(Map<String, dynamic>.from(e))).toList();
     } else {
-      _showMessage(prestasiResult['pesan'] ?? 'Gagal memuat buku prestasi', false);
+      _showMessage(prestasiResult['pesan'] ?? 'Gagal memuat buku prestasi santri', false);
     }
 
     setState(() => _loading = false);
   }
 
   List<PrestasiSantri> get _filteredItems {
-    final source = _items.where((e) => e.jenisPrestasi == _tab).toList();
-    if (_search.isEmpty) return source;
-    return source.where((e) {
+    if (_search.isEmpty) return _items;
+    return _items.where((e) {
       final text = [
         e.santriNama,
         e.santriJilid,
@@ -134,7 +132,6 @@ class _PrestasiSantriScreenState extends State<PrestasiSantriScreen> {
   void _startEdit(PrestasiSantri item) {
     setState(() {
       _editingId = item.id;
-      _tab = item.jenisPrestasi;
       _selectedSantriId = item.santriId;
       _tanggal = DateTime.tryParse(item.tanggal) ?? DateTime.now();
       _jilid = item.jilid ?? item.santriJilid ?? '';
@@ -150,12 +147,8 @@ class _PrestasiSantriScreenState extends State<PrestasiSantriScreen> {
       _showMessage('Nama santri wajib dipilih', false);
       return;
     }
-    if (_tab == 'surat_doa' && _suratController.text.trim().isEmpty) {
-      _showMessage('Surat pendek / doa harian wajib diisi', false);
-      return;
-    }
-    if (_tab == 'halaman' && _halamanController.text.trim().isEmpty) {
-      _showMessage('Halaman wajib diisi', false);
+    if (_suratController.text.trim().isEmpty && _halamanController.text.trim().isEmpty) {
+      _showMessage('Isi minimal Surat Pendek / Doa Harian atau Halaman Buku Prestasi Jilid', false);
       return;
     }
 
@@ -163,11 +156,10 @@ class _PrestasiSantriScreenState extends State<PrestasiSantriScreen> {
     final payload = {
       'santri_id': _selectedSantriId,
       'tanggal': _tanggal.toIso8601String().split('T')[0],
-      'jenis_prestasi': _tab,
       'jilid': _jilid,
-      'judul_prestasi': _tab == 'surat_doa' ? _suratController.text.trim() : null,
-      'halaman': _tab == 'halaman' ? _halamanController.text.trim() : null,
-      'paraf': _tab == 'halaman' ? _parafController.text.trim() : null,
+      'judul_prestasi': _suratController.text.trim(),
+      'halaman': _halamanController.text.trim(),
+      'paraf': _parafController.text.trim(),
       'keterangan': _keteranganController.text.trim(),
     };
 
@@ -242,7 +234,7 @@ class _PrestasiSantriScreenState extends State<PrestasiSantriScreen> {
                   children: [
                     const AppSectionHeader(
                       title: 'Buku Prestasi Santri',
-                      subtitle: 'Catat surat pendek, doa harian, dan prestasi halaman santri.',
+                      subtitle: 'Catat Surat Pendek & Doa Harian atau Halaman Buku Prestasi Jilid santri.',
                     ),
                     const SizedBox(height: 12),
                     Row(
@@ -290,24 +282,6 @@ class _PrestasiSantriScreenState extends State<PrestasiSantriScreen> {
                         labelText: 'Cari catatan',
                         prefixIcon: Icon(Icons.search),
                       ),
-                    ),
-                    const SizedBox(height: 12),
-                    Wrap(
-                      spacing: 8,
-                      children: [
-                        for (final item in const [
-                          {'key': 'surat_doa', 'label': 'Surat & Doa'},
-                          {'key': 'halaman', 'label': 'Prestasi Halaman'},
-                        ])
-                          ChoiceChip(
-                            label: Text(item['label']!),
-                            selected: _tab == item['key'],
-                            onSelected: (_) {
-                              setState(() => _tab = item['key']!);
-                              _resetForm();
-                            },
-                          ),
-                      ],
                     ),
                   ],
                 ),
@@ -379,31 +353,29 @@ class _PrestasiSantriScreenState extends State<PrestasiSantriScreen> {
                       ],
                     ),
                     const SizedBox(height: 12),
-                    if (_tab == 'surat_doa')
-                      TextField(
-                        controller: _suratController,
-                        decoration: const InputDecoration(
-                          labelText: 'Surat Pendek / Doa Harian',
-                          prefixIcon: Icon(Icons.auto_stories),
-                        ),
-                      )
-                    else ...[
-                      TextField(
-                        controller: _halamanController,
-                        decoration: const InputDecoration(
-                          labelText: 'Halaman',
-                          prefixIcon: Icon(Icons.book),
-                        ),
+                    TextField(
+                      controller: _suratController,
+                      decoration: const InputDecoration(
+                        labelText: 'Surat Pendek / Doa Harian',
+                        prefixIcon: Icon(Icons.auto_stories),
                       ),
-                      const SizedBox(height: 12),
-                      TextField(
-                        controller: _parafController,
-                        decoration: const InputDecoration(
-                          labelText: 'Paraf',
-                          prefixIcon: Icon(Icons.draw),
-                        ),
+                    ),
+                    const SizedBox(height: 12),
+                    TextField(
+                      controller: _halamanController,
+                      decoration: const InputDecoration(
+                        labelText: 'Halaman Buku Prestasi Jilid',
+                        prefixIcon: Icon(Icons.book),
                       ),
-                    ],
+                    ),
+                    const SizedBox(height: 12),
+                    TextField(
+                      controller: _parafController,
+                      decoration: const InputDecoration(
+                        labelText: 'Paraf',
+                        prefixIcon: Icon(Icons.draw),
+                      ),
+                    ),
                     const SizedBox(height: 12),
                     TextField(
                       controller: _keteranganController,
@@ -460,9 +432,7 @@ class _PrestasiSantriScreenState extends State<PrestasiSantriScreen> {
                       subtitle: Padding(
                         padding: const EdgeInsets.only(top: 8),
                         child: Text(
-                          _tab == 'surat_doa'
-                              ? 'Jilid: ${item.jilid ?? item.santriJilid ?? '-'}\nTanggal: ${formatDate(item.tanggal)}\nSurat/Doa: ${item.judulPrestasi ?? '-'}\nUst: ${item.ustNama}\nKeterangan: ${item.keterangan ?? '-'}'
-                              : 'Tanggal: ${formatDate(item.tanggal)}\nJilid: ${item.jilid ?? item.santriJilid ?? '-'}\nHalaman: ${item.halaman ?? '-'}\nUst: ${item.ustNama}\nParaf: ${item.paraf ?? '-'}\nKeterangan: ${item.keterangan ?? '-'}',
+                          'Tanggal: ${formatDate(item.tanggal)}\nJilid: ${item.jilid ?? item.santriJilid ?? '-'}\nSurat/Doa: ${item.judulPrestasi ?? '-'}\nHalaman: ${item.halaman ?? '-'}\nUst: ${item.ustNama}\nParaf: ${item.paraf ?? '-'}\nKeterangan: ${item.keterangan ?? '-'}',
                         ),
                       ),
                       isThreeLine: true,

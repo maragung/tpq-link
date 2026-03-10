@@ -376,6 +376,7 @@ class _SantriListScreenState extends State<SantriListScreen> {
     final user = Provider.of<AuthProvider>(context, listen: false).user;
     final canManageStatus = user?.canManageSantriStatus ?? false;
     final canEditSantri = user?.canEditSantri ?? false;
+    final canDeleteSantri = user?.canDeleteSantri ?? false;
     showModalBottomSheet(
       context: context,
       shape: const RoundedRectangleBorder(
@@ -516,6 +517,21 @@ class _SantriListScreenState extends State<SantriListScreen> {
                     },
                   ),
               ],
+              if (canDeleteSantri)
+                ListTile(
+                  leading: const CircleAvatar(
+                    backgroundColor: Color(0xFFFEE2E2),
+                    child: Icon(Icons.delete_outline, color: AppColors.danger),
+                  ),
+                  title: const Text('Hapus Santri',
+                      style: TextStyle(
+                          fontWeight: FontWeight.w600, color: AppColors.danger)),
+                  subtitle: const Text('Hapus permanen data santri'),
+                  onTap: () {
+                    Navigator.pop(context);
+                    _confirmStatusChange(context, s, 'hapus');
+                  },
+                ),
               ListTile(
                 leading: const CircleAvatar(
                   backgroundColor: Color(0xFFF3F4F6),
@@ -544,12 +560,16 @@ class _SantriListScreenState extends State<SantriListScreen> {
       builder: (_) => AlertDialog(
         title: Text(action == 'luluskan'
             ? 'Konfirmasi Kelulusan'
+            : action == 'hapus'
+                ? 'Hapus Santri'
             : action == 'aktifkan'
                 ? 'Aktifkan Santri'
                 : 'Nonaktifkan Santri'),
         content: Text(
           action == 'luluskan'
               ? 'Tandai ${s.namaLengkap} sebagai LULUS? Santri akan dipindahkan ke Alumni.'
+              : action == 'hapus'
+                  ? 'Hapus permanen ${s.namaLengkap}? Riwayat pembayaran, pembayaran lain, absensi, dan buku prestasi santri ini juga akan ikut terhapus.'
               : action == 'aktifkan'
                   ? 'Aktifkan kembali santri ${s.namaLengkap}?'
                   : 'Nonaktifkan santri ${s.namaLengkap}? SPP tidak lagi diwajibkan.',
@@ -570,6 +590,8 @@ class _SantriListScreenState extends State<SantriListScreen> {
             ),
             child: Text(action == 'luluskan'
                 ? '🎓 Luluskan'
+              : action == 'hapus'
+                ? '🗑️ Hapus'
                 : action == 'aktifkan'
                     ? 'Aktifkan'
                     : 'Nonaktifkan'),
@@ -589,8 +611,10 @@ class _SantriListScreenState extends State<SantriListScreen> {
       result = await santriProv.luluskanSantri(s.id, pin);
     } else if (action == 'aktifkan') {
       result = await santriProv.aktifkanSantri(s.id, pin);
-    } else {
+    } else if (action == 'hapus') {
       result = await santriProv.deleteSantri(s.id, pin);
+    } else {
+      result = await santriProv.nonaktifkanSantri(s.id, pin);
     }
 
     if (!context.mounted) return;
@@ -607,6 +631,7 @@ class _SantriListScreenState extends State<SantriListScreen> {
     final user = Provider.of<AuthProvider>(context, listen: false).user;
     final canManageStatus = user?.canManageSantriStatus ?? false;
     final canEditSantri = user?.canEditSantri ?? false;
+    final canDeleteSantri = user?.canDeleteSantri ?? false;
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
@@ -819,6 +844,25 @@ class _SantriListScreenState extends State<SantriListScreen> {
                     ),
                   ],
                 ),
+                if (canDeleteSantri) ...[
+                  const SizedBox(height: 8),
+                  SizedBox(
+                    width: double.infinity,
+                    child: OutlinedButton.icon(
+                      onPressed: () {
+                        Navigator.pop(context);
+                        _confirmStatusChange(context, s, 'hapus');
+                      },
+                      icon: const Icon(Icons.delete_outline,
+                          size: 18, color: AppColors.danger),
+                      label: const Text('Hapus Santri',
+                          style: TextStyle(color: AppColors.danger)),
+                      style: OutlinedButton.styleFrom(
+                        side: const BorderSide(color: AppColors.danger),
+                      ),
+                    ),
+                  ),
+                ],
               ] else ...[
                 ElevatedButton.icon(
                   onPressed: () {
