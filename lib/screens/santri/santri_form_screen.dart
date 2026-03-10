@@ -22,6 +22,7 @@ class _SantriFormScreenState extends State<SantriFormScreen> {
   final _noTelpWaliController = TextEditingController();
   final _emailWaliController = TextEditingController();
 
+  String _jenisKelamin = '';
   String _jilid = 'Jilid 1';
   bool _isSubsidi = false;
   DateTime _tglMendaftar = DateTime.now();
@@ -52,6 +53,7 @@ class _SantriFormScreenState extends State<SantriFormScreen> {
       _namaWaliController.text = data['nama_wali'] ?? '';
       _noTelpWaliController.text = data['no_telp_wali'] ?? '';
       _emailWaliController.text = data['email_wali'] ?? '';
+      _jenisKelamin = data['jenis_kelamin'] ?? '';
       _jilid = data['jilid'] ?? 'Jilid 1';
       _isSubsidi = data['is_subsidi'] ?? false;
       if (data['tgl_mendaftar'] != null) {
@@ -65,13 +67,14 @@ class _SantriFormScreenState extends State<SantriFormScreen> {
     if (!_formKey.currentState!.validate()) return;
 
     final pin = await showPinDialog(context);
-    if (pin == null) return;
+    if (!mounted || pin == null) return;
 
     setState(() => _isLoading = true);
 
     final data = {
       'nik': _nikController.text.trim(),
       'nama_lengkap': _namaController.text.trim(),
+        'jenis_kelamin': _jenisKelamin,
       'no_absen': _noAbsenController.text.trim().isNotEmpty
           ? int.tryParse(_noAbsenController.text.trim())
           : null,
@@ -90,25 +93,24 @@ class _SantriFormScreenState extends State<SantriFormScreen> {
         ? await santriProv.updateSantri(_editId!, data)
         : await santriProv.addSantri(data);
 
+    if (!mounted) return;
     setState(() => _isLoading = false);
 
-    if (mounted) {
-      if (result['success'] == true) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(result['pesan'] ?? 'Berhasil'),
-            backgroundColor: AppColors.success,
-          ),
-        );
-        Navigator.pop(context);
-      } else {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(result['pesan'] ?? 'Gagal'),
-            backgroundColor: AppColors.danger,
-          ),
-        );
-      }
+    if (result['success'] == true) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(result['pesan'] ?? 'Berhasil'),
+          backgroundColor: AppColors.success,
+        ),
+      );
+      Navigator.pop(context);
+    } else {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(result['pesan'] ?? 'Gagal'),
+          backgroundColor: AppColors.danger,
+        ),
+      );
     }
   }
 
@@ -174,6 +176,20 @@ class _SantriFormScreenState extends State<SantriFormScreen> {
                       ),
                       validator: (v) =>
                           v == null || v.trim().isEmpty ? 'Nama wajib diisi' : null,
+                    ),
+                    const SizedBox(height: 16),
+                    DropdownButtonFormField<String>(
+                      value: _jenisKelamin.isEmpty ? null : _jenisKelamin,
+                      decoration: const InputDecoration(
+                        labelText: 'Jenis Kelamin',
+                        prefixIcon: Icon(Icons.wc),
+                      ),
+                      items: jenisKelaminOptions
+                          .map((j) => DropdownMenuItem(value: j, child: Text(j)))
+                          .toList(),
+                      onChanged: (v) => setState(() => _jenisKelamin = v ?? ''),
+                      validator: (v) =>
+                          v == null || v.isEmpty ? 'Jenis kelamin wajib dipilih' : null,
                     ),
                     const SizedBox(height: 16),
                     DropdownButtonFormField<String>(

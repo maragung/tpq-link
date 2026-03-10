@@ -3,6 +3,7 @@ class Santri {
   final int? noAbsen;
   final String nik;
   final String namaLengkap;
+  final String? jenisKelamin;
   final String? jilid;
   final String? alamat;
   final String? namaWali;
@@ -18,6 +19,7 @@ class Santri {
     this.noAbsen,
     required this.nik,
     required this.namaLengkap,
+    this.jenisKelamin,
     this.jilid,
     this.alamat,
     this.namaWali,
@@ -35,6 +37,7 @@ class Santri {
       noAbsen: json['no_absen'],
       nik: json['nik'] ?? '',
       namaLengkap: json['nama_lengkap'] ?? '',
+      jenisKelamin: json['jenis_kelamin'],
       jilid: json['jilid'],
       alamat: json['alamat'],
       namaWali: json['nama_wali'],
@@ -52,6 +55,7 @@ class Santri {
         if (noAbsen != null) 'no_absen': noAbsen,
         'nik': nik,
         'nama_lengkap': namaLengkap,
+        'jenis_kelamin': jenisKelamin,
         'jilid': jilid,
         'alamat': alamat,
         'nama_wali': namaWali,

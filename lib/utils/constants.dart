@@ -91,3 +91,8 @@ const List<String> jilidOptions = [
   'Pra TK', 'Jilid 1', 'Jilid 2', 'Jilid 3', 'Jilid 4',
   'Jilid 5', 'Jilid 6', 'Gharib', 'Tajwid', 'Al-Quran'
 ];
+
+const List<String> jenisKelaminOptions = [
+  'Laki-laki',
+  'Perempuan',
+];

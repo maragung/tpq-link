@@ -50,6 +50,7 @@ class StatusPembayaran {
   final int? noAbsen;
   final String nik;
   final String namaLengkap;
+  final String? jenisKelamin;
   final String? jilid;
   final bool statusAktif;
   final bool isSubsidi;
@@ -57,6 +58,7 @@ class StatusPembayaran {
   final int tahun;
   final Map<String, dynamic> bulanStatus;
   final num totalBayar;
+  final int bulanDibayarTotal;
   final int bulanTerbayar;
   final int bulanWajib;
   final int bulanBelumBayar;
@@ -70,6 +72,7 @@ class StatusPembayaran {
     this.noAbsen,
     required this.nik,
     required this.namaLengkap,
+    this.jenisKelamin,
     this.jilid,
     required this.statusAktif,
     required this.isSubsidi,
@@ -77,6 +80,7 @@ class StatusPembayaran {
     required this.tahun,
     required this.bulanStatus,
     required this.totalBayar,
+    required this.bulanDibayarTotal,
     required this.bulanTerbayar,
     required this.bulanWajib,
     required this.bulanBelumBayar,
@@ -92,6 +96,7 @@ class StatusPembayaran {
       noAbsen: json['no_absen'],
       nik: json['nik'] ?? '',
       namaLengkap: json['nama_lengkap'] ?? '',
+      jenisKelamin: json['jenis_kelamin'],
       jilid: json['jilid'],
       statusAktif: json['status_aktif'] ?? true,
       isSubsidi: json['is_subsidi'] ?? false,
@@ -99,6 +104,7 @@ class StatusPembayaran {
       tahun: json['tahun'] ?? DateTime.now().year,
       bulanStatus: Map<String, dynamic>.from(json['bulan_status'] ?? {}),
       totalBayar: json['total_bayar'] ?? 0,
+      bulanDibayarTotal: json['bulan_dibayar_total'] ?? 0,
       bulanTerbayar: json['bulan_terbayar'] ?? 0,
       bulanWajib: json['bulan_wajib'] ?? 0,
       bulanBelumBayar: json['bulan_belum_bayar'] ?? 0,

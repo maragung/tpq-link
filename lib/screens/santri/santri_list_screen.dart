@@ -7,6 +7,8 @@ import '../../utils/helpers.dart';
 import '../../widgets/pin_dialog.dart';
 import '../../widgets/skeleton_loader.dart';
 
+enum _SantriSortBy { noAbsen, nama, tglMendaftar }
+
 class SantriListScreen extends StatefulWidget {
   const SantriListScreen({super.key});
 
@@ -17,7 +19,10 @@ class SantriListScreen extends StatefulWidget {
 class _SantriListScreenState extends State<SantriListScreen> {
   final _searchController = TextEditingController();
   String _searchQuery = '';
-  String _filterKategori = 'Semua';
+  final Set<String> _selectedKategori = <String>{};
+  final Set<String> _selectedJilid = <String>{};
+  _SantriSortBy _sortBy = _SantriSortBy.nama;
+  bool _sortAsc = true;
 
   @override
   void dispose() {
@@ -29,6 +34,12 @@ class _SantriListScreenState extends State<SantriListScreen> {
   Widget build(BuildContext context) {
     final santriProv = context.watch<SantriProvider>();
     final santriList = _filterSantri(santriProv.santriList);
+    final jilidList = santriProv.santriList
+        .map((s) => s.jilid)
+        .whereType<String>()
+        .toSet()
+        .toList()
+      ..sort((a, b) => a.compareTo(b));
 
     return SafeArea(
       top: false,
@@ -89,16 +100,24 @@ class _SantriListScreenState extends State<SantriListScreen> {
                 child: ListView(
                   scrollDirection: Axis.horizontal,
                   children: [
-                    for (final kat in ['Semua', 'Aktif', 'Nonaktif', 'Subsidi', 'Lunas', 'Belum Lunas'])
+                    for (final kat in ['Subsidi', 'Non Subsidi', 'Lunas', 'Laki-laki', 'Perempuan'])
                       Padding(
                         padding: const EdgeInsets.only(right: 8),
                         child: ChoiceChip(
                           label: Text(kat, style: const TextStyle(fontSize: 12)),
-                          selected: _filterKategori == kat,
-                          onSelected: (_) => setState(() => _filterKategori = kat),
+                          selected: _selectedKategori.contains(kat),
+                          onSelected: (_) {
+                            setState(() {
+                              if (_selectedKategori.contains(kat)) {
+                                _selectedKategori.remove(kat);
+                              } else {
+                                _selectedKategori.add(kat);
+                              }
+                            });
+                          },
                           selectedColor: AppColors.primary.withAlpha(51),
                           labelStyle: TextStyle(
-                            color: _filterKategori == kat
+                            color: _selectedKategori.contains(kat)
                                 ? AppColors.primary
                                 : AppColors.textSecondary,
                           ),
@@ -108,6 +127,92 @@ class _SantriListScreenState extends State<SantriListScreen> {
                       ),
                   ],
                 ),
+              ),
+              const SizedBox(height: 8),
+              Align(
+                alignment: Alignment.centerLeft,
+                child: Wrap(
+                  spacing: 8,
+                  runSpacing: 8,
+                  children: [
+                    for (final jilid in jilidList)
+                      FilterChip(
+                        label: Text(jilid, style: const TextStyle(fontSize: 12)),
+                        selected: _selectedJilid.contains(jilid),
+                        onSelected: (_) {
+                          setState(() {
+                            if (_selectedJilid.contains(jilid)) {
+                              _selectedJilid.remove(jilid);
+                            } else {
+                              _selectedJilid.add(jilid);
+                            }
+                          });
+                        },
+                        selectedColor: AppColors.secondary.withAlpha(40),
+                        checkmarkColor: AppColors.secondary,
+                      ),
+                    ActionChip(
+                      avatar: const Icon(Icons.filter_alt_off, size: 16),
+                      label: const Text('Reset', style: TextStyle(fontSize: 12)),
+                      onPressed: () {
+                        setState(() {
+                          _selectedKategori.clear();
+                          _selectedJilid.clear();
+                          _sortBy = _SantriSortBy.nama;
+                          _sortAsc = true;
+                        });
+                      },
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(height: 8),
+              Row(
+                children: [
+                  Expanded(
+                    child: DropdownButtonFormField<_SantriSortBy>(
+                      value: _sortBy,
+                      decoration: InputDecoration(
+                        labelText: 'Sortir',
+                        border: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                        contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+                        isDense: true,
+                      ),
+                      items: const [
+                        DropdownMenuItem(value: _SantriSortBy.noAbsen, child: Text('No. Absen')),
+                        DropdownMenuItem(value: _SantriSortBy.nama, child: Text('Nama')),
+                        DropdownMenuItem(value: _SantriSortBy.tglMendaftar, child: Text('Waktu Terdaftar')),
+                      ],
+                      onChanged: (v) {
+                        if (v != null) setState(() => _sortBy = v);
+                      },
+                    ),
+                  ),
+                  const SizedBox(width: 8),
+                  SizedBox(
+                    width: 120,
+                    child: DropdownButtonFormField<bool>(
+                      value: _sortAsc,
+                      decoration: InputDecoration(
+                        labelText: 'Arah',
+                        border: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                        contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+                        isDense: true,
+                      ),
+                      items: const [
+                        DropdownMenuItem(value: true, child: Text('Naik')),
+                        DropdownMenuItem(value: false, child: Text('Turun')),
+                      ],
+                      onChanged: (v) {
+                        if (v != null) setState(() => _sortAsc = v);
+                      },
+                    ),
+                  ),
+                ],
               ),
               const SizedBox(height: 8),
             ],
@@ -159,11 +264,12 @@ class _SantriListScreenState extends State<SantriListScreen> {
                                   style: const TextStyle(
                                       fontWeight: FontWeight.w600)),
                               subtitle: Text(
-                                'NIK: ${s.nik} • ${s.jilid ?? "-"}',
+                                'NIK: ${s.nik} • ${s.jilid ?? "-"}${s.jenisKelamin != null ? ' • ${s.jenisKelamin}' : ''}\nDibayar: ${s.bulanDibayarTotal} bulan • Tahun ini: ${s.bulanTerbayar}/${s.bulanWajib}',
                                 style: const TextStyle(
                                     color: AppColors.textSecondary,
                                     fontSize: 12),
                               ),
+                              isThreeLine: true,
                               trailing: Column(
                                 mainAxisAlignment:
                                     MainAxisAlignment.center,
@@ -188,6 +294,15 @@ class _SantriListScreenState extends State<SantriListScreen> {
                                       ),
                                     ),
                                   ),
+                                  const SizedBox(height: 4),
+                                  Text(
+                                    '${s.bulanDibayarTotal} bln',
+                                    style: const TextStyle(
+                                      fontSize: 11,
+                                      color: AppColors.textSecondary,
+                                      fontWeight: FontWeight.w600,
+                                    ),
+                                  ),
                                 ],
                               ),
                               onTap: () => _showSantriActions(context, s),
@@ -207,25 +322,53 @@ class _SantriListScreenState extends State<SantriListScreen> {
       if (_searchQuery.isNotEmpty) {
         final q = _searchQuery.toLowerCase();
         if (!s.namaLengkap.toLowerCase().contains(q) &&
-            !s.nik.toLowerCase().contains(q)) {
+            !s.nik.toLowerCase().contains(q) &&
+            !(s.jenisKelamin?.toLowerCase().contains(q) ?? false)) {
           return false;
         }
       }
-      switch (_filterKategori) {
-        case 'Aktif':
-          return s.statusAktif;
-        case 'Nonaktif':
-          return !s.statusAktif;
-        case 'Subsidi':
-          return s.isSubsidi;
-        case 'Lunas':
-          return s.statusAktif && s.bulanBelumBayar == 0;
-        case 'Belum Lunas':
-          return s.statusAktif && s.bulanBelumBayar > 0;
-        default:
-          return true;
+
+      final subsidiFilter = _selectedKategori.where((e) => e == 'Subsidi' || e == 'Non Subsidi').toList();
+      if (subsidiFilter.length == 1) {
+        if (subsidiFilter.first == 'Subsidi' && !s.isSubsidi) return false;
+        if (subsidiFilter.first == 'Non Subsidi' && s.isSubsidi) return false;
       }
+
+      final genderFilter = _selectedKategori.where((e) => e == 'Laki-laki' || e == 'Perempuan').toList();
+      if (genderFilter.length == 1) {
+        if (genderFilter.first == 'Laki-laki' && s.jenisKelamin != 'Laki-laki') return false;
+        if (genderFilter.first == 'Perempuan' && s.jenisKelamin != 'Perempuan') return false;
+      }
+
+      if (_selectedKategori.contains('Lunas') && !(s.statusAktif && s.bulanBelumBayar == 0)) {
+        return false;
+      }
+
+      if (_selectedJilid.isNotEmpty && !_selectedJilid.contains(s.jilid)) {
+        return false;
+      }
+
+      return true;
     }).toList();
+
+    filtered.sort((a, b) {
+      int result;
+      switch (_sortBy) {
+        case _SantriSortBy.noAbsen:
+          result = (a.noAbsen ?? 999999).compareTo(b.noAbsen ?? 999999);
+          break;
+        case _SantriSortBy.tglMendaftar:
+          final aDate = DateTime.tryParse(a.tglMendaftar ?? '') ?? DateTime(1970);
+          final bDate = DateTime.tryParse(b.tglMendaftar ?? '') ?? DateTime(1970);
+          result = aDate.compareTo(bDate);
+          break;
+        case _SantriSortBy.nama:
+          result = a.namaLengkap.toLowerCase().compareTo(b.namaLengkap.toLowerCase());
+          break;
+      }
+      return _sortAsc ? result : -result;
+    });
+
     return filtered;
   }
 
@@ -277,6 +420,9 @@ class _SantriListScreenState extends State<SantriListScreen> {
                               style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 15)),
                           Text('${s.jilid ?? '-'} • ${s.isSubsidi ? 'Subsidi' : 'Non Subsidi'}',
                               style: const TextStyle(fontSize: 12, color: AppColors.textSecondary)),
+                          if (s.jenisKelamin != null && s.jenisKelamin!.isNotEmpty)
+                            Text(s.jenisKelamin!,
+                                style: const TextStyle(fontSize: 11, color: AppColors.textSecondary)),
                         ],
                       ),
                     ),
@@ -563,8 +709,10 @@ class _SantriListScreenState extends State<SantriListScreen> {
               const SizedBox(height: 20),
 
               // Detail info
+              _DetailRow('Jenis Kelamin', s.jenisKelamin ?? '-'),
               _DetailRow('Jilid', s.jilid ?? '-'),
               if (s.noAbsen != null) _DetailRow('No. Absen', '${s.noAbsen}'),
+              _DetailRow('Dibayar Total', '${s.bulanDibayarTotal} bulan'),
               _DetailRow('Nominal SPP', formatCurrency(s.nominalSpp)),
               const Divider(height: 24),
 
