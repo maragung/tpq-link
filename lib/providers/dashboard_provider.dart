@@ -9,6 +9,17 @@ class DashboardProvider extends ChangeNotifier {
   bool _loading = false;
   String? _error;
 
+  Map<String, dynamic> _normalizeDanaData(Map<String, dynamic> raw) {
+    return {
+      ...raw,
+      // Backward-compatible aliases used by existing Flutter screens.
+      'saldo_kas': raw['saldo_kas'] ?? raw['saldo_akhir'] ?? 0,
+      'total_pemasukan': raw['total_pemasukan'] ?? raw['total_pemasukan_tahun'] ?? 0,
+      'total_pengeluaran': raw['total_pengeluaran'] ?? raw['total_pengeluaran_tahun'] ?? 0,
+      'total_infak': raw['total_infak'] ?? raw['total_infak_tahun'] ?? 0,
+    };
+  }
+
   Map<String, dynamic>? get danaData => _danaData;
   bool get loading => _loading;
   String? get error => _error;
@@ -28,7 +39,8 @@ class DashboardProvider extends ChangeNotifier {
 
     final result = await ApiService.get(ApiConfig.danaUrl);
     if (result['success'] == true) {
-      _danaData = result['data'];
+      final data = (result['data'] as Map?)?.cast<String, dynamic>() ?? <String, dynamic>{};
+      _danaData = _normalizeDanaData(data);
     } else {
       _error = result['pesan'];
     }
