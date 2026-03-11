@@ -139,6 +139,20 @@ else
   warn "Or set ANDROID_HOME manually and re-run this script."
 fi
 
+if [[ -n "${ANDROID_HOME:-}" && -d "$ANDROID_HOME" ]]; then
+  export ANDROID_SDK_ROOT="$ANDROID_HOME"
+  if [[ -f "$PROJECT_ROOT/android/local.properties" ]]; then
+    if grep -qE '^sdk\.dir=' "$PROJECT_ROOT/android/local.properties"; then
+      sed -i "s|^sdk\.dir=.*$|sdk.dir=$ANDROID_HOME|" "$PROJECT_ROOT/android/local.properties"
+    else
+      printf '\nsdk.dir=%s\n' "$ANDROID_HOME" >> "$PROJECT_ROOT/android/local.properties"
+    fi
+  else
+    printf 'sdk.dir=%s\n' "$ANDROID_HOME" > "$PROJECT_ROOT/android/local.properties"
+  fi
+  success "android/local.properties synced: sdk.dir=$ANDROID_HOME"
+fi
+
 # ── Flutter doctor ────────────────────────────────────────────────────────────
 step "Flutter Doctor"
 log "Running flutter doctor..."

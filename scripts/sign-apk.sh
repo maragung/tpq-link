@@ -7,7 +7,7 @@
 #
 # What this script does:
 #   1. Generates scripts/keys.jks (if not already present)
-#   2. Creates android/app/key.properties (used by build.gradle.kts)
+#   2. Creates android/app/key.properties (used by build.gradle)
 #
 # Prerequisites (run scripts/install.sh first):
 #   - Java JDK 17+  (keytool must be in PATH)
@@ -21,6 +21,7 @@ PROJECT_ROOT="$(cd "$SCRIPT_DIR/.." && pwd)"
 
 KEYSTORE_PATH="$SCRIPT_DIR/keys.jks"
 KEY_PROPS_PATH="$PROJECT_ROOT/android/app/key.properties"
+KEYSTORE_RELATIVE_PATH="../../scripts/keys.jks"
 
 # ── Colors ────────────────────────────────────────────────────────────────────
 RED='\033[0;31m'; GREEN='\033[0;32m'; YELLOW='\033[1;33m'
@@ -136,7 +137,7 @@ cat > "$KEY_PROPS_PATH" << EOF
 storePassword=${STORE_PASSWORD}
 keyPassword=${KEY_PASSWORD}
 keyAlias=${KEY_ALIAS}
-storeFile=${KEYSTORE_PATH}
+storeFile=${KEYSTORE_RELATIVE_PATH}
 EOF
 
 success "key.properties written."
