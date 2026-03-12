@@ -265,6 +265,45 @@ normalize_signing_config() {
   fi
 }
 
+# Verify that the key alias in key.properties actually exists in the keystore.
+# If not (e.g. keystore was created with a different alias), regenerate it automatically.
+verify_and_fix_signing() {
+  [[ -f "$KEY_PROPS" && -f "$KEYSTORE" ]] || return 0
+
+  local key_alias store_pass key_pass
+
+  key_alias=$(grep -E '^keyAlias='     "$KEY_PROPS" | cut -d= -f2- | sed 's/^[[:space:]]*//' || true)
+  store_pass=$(grep -E '^storePassword=' "$KEY_PROPS" | cut -d= -f2- | sed 's/^[[:space:]]*//' || true)
+  key_pass=$(grep  -E '^keyPassword='  "$KEY_PROPS" | cut -d= -f2- | sed 's/^[[:space:]]*//' || true)
+
+  [[ -n "$key_alias" && -n "$store_pass" ]] || return 0
+
+  # Try to find the alias in the keystore; silence all output.
+  if keytool -list \
+       -keystore "$KEYSTORE" \
+       -storepass "$store_pass" \
+       -alias "$key_alias" \
+       >/dev/null 2>&1; then
+    return 0   # alias exists — nothing to do
+  fi
+
+  warn "Alias '$key_alias' not found in keystore (alias mismatch). Regenerating keystore..."
+  rm -f "$KEYSTORE"
+
+  keytool -genkey -v \
+    -keystore "$KEYSTORE" \
+    -storetype JKS \
+    -alias     "$key_alias" \
+    -keyalg RSA -keysize 2048 \
+    -validity  9125 \
+    -storepass "$store_pass" \
+    -keypass   "${key_pass:-$store_pass}" \
+    -dname     "CN=TPQ Futuhil Hidayah, OU=Futuhil Hidayah Wal Nikmah, O=Futuhil Hidayah Wal Nikmah, L=Indonesia, ST=Indonesia, C=ID" \
+    >/dev/null 2>&1
+
+  success "Keystore regenerated with alias '$key_alias'."
+}
+
 ensure_android_sdk_requirements() {
   local sdk_dir sdkmanager
 
@@ -350,6 +389,7 @@ else
 fi
 
 normalize_signing_config
+verify_and_fix_signing
 
 # ── Enter project root ────────────────────────────────────────────────────────
 cd "$PROJECT_ROOT"
