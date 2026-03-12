@@ -266,7 +266,10 @@ class _TPQAppState extends State<TPQApp> {
               '/login': (_) => const LoginScreen(),
               '/qr-scan': (_) => const QRScanScreen(),
               '/dashboard': (_) => const MainScreen(),
-              '/santri': (_) => const SantriListScreen(),
+              '/santri': (_) => Scaffold(
+                appBar: AppBar(title: const Text('Data Santri')),
+                body: const SantriListScreen(),
+              ),
               '/santri/tambah': (_) => const SantriFormScreen(),
               '/pembayaran': (_) => const PembayaranScreen(),
               '/bayar-spp': (_) => const BayarSPPScreen(),

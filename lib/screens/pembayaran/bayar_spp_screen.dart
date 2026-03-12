@@ -31,6 +31,10 @@ class _BayarSPPScreenState extends State<BayarSPPScreen> {
   bool _fetchingPayments = false;
   bool _didInitPayments = false;
 
+  /// Year-specific bulan status fetched locally (independent of global SantriProvider year)
+  Map<String, dynamic> _localBulanStatus = {};
+  bool _fetchingLocalStatus = false;
+
   @override
   void didChangeDependencies() {
     super.didChangeDependencies();
@@ -44,8 +48,43 @@ class _BayarSPPScreenState extends State<BayarSPPScreen> {
           prevId != _selectedSantriId) {
         _didInitPayments = true;
         _fetchPaidPayments(_selectedSantriId!);
+        _fetchLocalBulanStatus(_selectedSantriId!, _tahun);
       }
     }
+  }
+
+  /// Fetch year-specific bulan status locally (does not change global SantriProvider year)
+  Future<void> _fetchLocalBulanStatus(int santriId, int year) async {
+    setState(() => _fetchingLocalStatus = true);
+    final result = await ApiService.get(
+      ApiConfig.pembayaranStatusUrl,
+      queryParams: {
+        'tahun': year.toString(),
+        'santri_id': santriId.toString(),
+        'include_nonaktif': 'true',
+      },
+    );
+    if (!mounted) return;
+    if (result['success'] == true) {
+      final data = result['data'] as List? ?? [];
+      for (final item in data) {
+        if ((item['id'] as int?) == santriId) {
+          final raw = (item['bulan_status'] as Map?) ?? {};
+          setState(() {
+            _localBulanStatus = {
+              for (final k in raw.keys)
+                k.toString(): Map<String, dynamic>.from(raw[k] as Map),
+            };
+            _fetchingLocalStatus = false;
+          });
+          return;
+        }
+      }
+    }
+    setState(() {
+      _localBulanStatus = {};
+      _fetchingLocalStatus = false;
+    });
   }
 
   /// Fetch payment records (with IDs) for cancel support
@@ -195,10 +234,10 @@ class _BayarSPPScreenState extends State<BayarSPPScreen> {
     return parsed;
   }
 
-  /// Get the earliest unpaid required month for selected santri
-  int? _getEarliestUnpaid(dynamic santri) {
+  /// Get the earliest unpaid required month using local year-specific status
+  int? _getEarliestUnpaid(dynamic _) {
     for (int bulan = 1; bulan <= 12; bulan++) {
-      final status = santri.bulanStatus['$bulan'];
+      final status = _localBulanStatus['$bulan'];
       final wajib = status?['wajib'] == true;
       final dibayar = status?['dibayar'] == true;
       if (wajib && !dibayar) return bulan;
@@ -206,17 +245,17 @@ class _BayarSPPScreenState extends State<BayarSPPScreen> {
     return null;
   }
 
-  /// First month this santri is required to pay in the selected year
-  int? _getBulanMulai(dynamic santri) {
+  /// First month required to pay in the selected year using local status
+  int? _getBulanMulai(dynamic _) {
     for (int bulan = 1; bulan <= 12; bulan++) {
-      final status = santri.bulanStatus['$bulan'];
+      final status = _localBulanStatus['$bulan'];
       if (status?['wajib'] == true) return bulan;
     }
     return null;
   }
 
-  bool _isBeforeRegistration(dynamic santri, int bulan) {
-    final status = santri.bulanStatus['$bulan'];
+  bool _isBeforeRegistration(dynamic _, int bulan) {
+    final status = _localBulanStatus['$bulan'];
     if (status == null) return false;
     final wajib = status['wajib'] == true;
     final alasan = status['alasan'] as String?;
@@ -318,8 +357,10 @@ class _BayarSPPScreenState extends State<BayarSPPScreen> {
                         _selectedBulan.clear();
                         _paidPayments.clear();
                         _nominalManualController.clear();
+                        _localBulanStatus = {};
                       });
                       _fetchPaidPayments(santri.id);
+                      _fetchLocalBulanStatus(santri.id, _tahun);
                     },
                     onCleared: _selectedSantriId == null
                         ? null
@@ -330,6 +371,7 @@ class _BayarSPPScreenState extends State<BayarSPPScreen> {
                               _selectedBulan.clear();
                               _paidPayments.clear();
                               _nominalManualController.clear();
+                              _localBulanStatus = {};
                             });
                           },
                   ),
@@ -415,7 +457,7 @@ class _BayarSPPScreenState extends State<BayarSPPScreen> {
                                   Colors.red.shade700,
                                   Colors.red.shade50,
                                 )
-                              else if (selectedSantri.bulanWajib > 0)
+                              else if (_localBulanStatus.values.any((s) => s['wajib'] == true))
                                 _infoBadge(
                                   '✓ Lunas $_tahun',
                                   Colors.green.shade700,
@@ -460,10 +502,11 @@ class _BayarSPPScreenState extends State<BayarSPPScreen> {
                         _selectedBulan.clear();
                         _paidPayments.clear();
                         _nominalManualController.clear();
+                        _localBulanStatus = {};
                       });
-                      context.read<SantriProvider>().selectedYear = v;
                       if (_selectedSantriId != null) {
                         _fetchPaidPayments(_selectedSantriId!);
+                        _fetchLocalBulanStatus(_selectedSantriId!, v);
                       }
                     },
                   ),
@@ -622,7 +665,7 @@ class _BayarSPPScreenState extends State<BayarSPPScreen> {
                                     Colors.red.shade700,
                                     Colors.red.shade50,
                                   )
-                                else if (selectedSantri.bulanWajib > 0)
+                                else if (_localBulanStatus.values.any((s) => s['wajib'] == true))
                                   _infoBadge(
                                     '✓ Lunas $_tahun',
                                     Colors.green.shade700,
@@ -812,9 +855,8 @@ class _BayarSPPScreenState extends State<BayarSPPScreen> {
   }
 
   Widget _buildMonthGrid(dynamic selectedSantri) {
-    // Determine the earliest unpaid required month
-    final earliest =
-        selectedSantri != null ? _getEarliestUnpaid(selectedSantri) : null;
+    // Determine the earliest unpaid required month from local year-specific status
+    final earliest = _getEarliestUnpaid(null);
     final selectedSorted = _selectedBulan.toList()..sort();
     final expectedNext = selectedSorted.isEmpty
         ? earliest
@@ -826,15 +868,13 @@ class _BayarSPPScreenState extends State<BayarSPPScreen> {
       children: List.generate(12, (i) {
         final bulan = i + 1;
         bool sudahBayar = false;
-        bool wajib = true;
+        bool wajib = false;
         bool beforeRegistration = false;
 
-        if (selectedSantri != null) {
-          beforeRegistration = _isBeforeRegistration(selectedSantri, bulan);
-          final status = selectedSantri.bulanStatus['$bulan'];
-          sudahBayar = status?['dibayar'] == true;
-          wajib = status?['wajib'] == true;
-        }
+        final status = _localBulanStatus['$bulan'];
+        sudahBayar = status?['dibayar'] == true;
+        wajib = status?['wajib'] == true;
+        beforeRegistration = _isBeforeRegistration(null, bulan);
 
         final isSelected = _selectedBulan.contains(bulan);
         // Can select only if: wajib, not paid, and is the next in sequence
