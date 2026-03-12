@@ -230,7 +230,7 @@ class _BayarSPPScreenState extends State<BayarSPPScreen> {
         _nominalManualController.text.replaceAll(RegExp(r'[^0-9]'), '');
     if (digits.isEmpty) return null;
     final parsed = int.tryParse(digits);
-    if (parsed == null || parsed <= 0) return null;
+    if (parsed == null || parsed < 0) return null;
     return parsed;
   }
 
@@ -292,7 +292,8 @@ class _BayarSPPScreenState extends State<BayarSPPScreen> {
       'bulan_list': _selectedBulan.toList()..sort(),
       'tahun_spp': _tahun,
       'nominal': nominalFinal,
-      if (nominalManual != null) 'nominal_manual': nominalManual,
+      if (nominalManual != null) 'nominal_per_bulan': nominalManual,
+      if (nominalManual != null) 'abaikan_aturan_nominal': true,
       'metode_bayar': _metodeBayar,
       'keterangan': _keteranganController.text.trim(),
       'pin': pin,

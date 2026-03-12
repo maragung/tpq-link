@@ -224,8 +224,8 @@ class _PembayaranLainScreenState extends State<PembayaranLainScreen> {
                     if (v == null || v.trim().isEmpty) {
                       return 'Nominal wajib diisi';
                     }
-                    if ((int.tryParse(v.trim()) ?? 0) <= 0) {
-                      return 'Nominal harus lebih dari 0';
+                    if ((int.tryParse(v.trim()) ?? -1) < 0) {
+                      return 'Nominal tidak valid';
                     }
                     return null;
                   },
