@@ -3,11 +3,12 @@
 # scripts/build-apk.sh — Build release APK / AAB for TPQ Link
 # =============================================================================
 # Usage:
-#   cd scripts && ./build-apk.sh [--split-per-abi] [--aab]
+#   cd scripts && ./build-apk.sh [--split-per-abi|--split-abi] [--aab]
 #   OR from project root:  bash scripts/build-apk.sh [options]
 #
 # Options:
 #   --split-per-abi   Build separate APKs per ABI (arm64-v8a, armeabi-v7a, x86_64)
+#   --split-abi       Alias for --split-per-abi
 #   --aab             Build Android App Bundle (.aab) for Play Store
 #
 # Prerequisites (run scripts/install.sh first):
@@ -89,11 +90,6 @@ resolve_sdkmanager() {
   local sdk_dir="${1:-}"
   local candidate
 
-  if command -v sdkmanager >/dev/null 2>&1; then
-    command -v sdkmanager
-    return 0
-  fi
-
   for candidate in \
     "$sdk_dir/cmdline-tools/latest/bin/sdkmanager" \
     "$sdk_dir/cmdline-tools/latest-2/bin/sdkmanager" \
@@ -114,7 +110,101 @@ resolve_sdkmanager() {
     fi
   fi
 
+  if command -v sdkmanager >/dev/null 2>&1; then
+    command -v sdkmanager
+    return 0
+  fi
+
   return 1
+}
+
+configure_flutter_android_sdk() {
+  local sdk_dir="$1"
+
+  [[ -n "$sdk_dir" && -d "$sdk_dir" ]] || return 0
+
+  if flutter config --list 2>/dev/null | grep -Fq "android-sdk: $sdk_dir"; then
+    return 0
+  fi
+
+  log "Pinning Flutter Android SDK to: $sdk_dir"
+  flutter config --android-sdk "$sdk_dir" >/dev/null 2>&1 || \
+    warn "Failed to persist Flutter Android SDK config. Falling back to environment variables only."
+}
+
+patch_legacy_uni_links_plugin() {
+  local plugin_file gradle_file tmp_file
+
+  # 1. Patch Java source: remove obsolete v1 embedding registerWith method
+  plugin_file=$(find "$HOME/.pub-cache/hosted/pub.dev" \
+    -path '*/uni_links-*/android/src/main/java/name/avioli/unilinks/UniLinksPlugin.java' \
+    -type f 2>/dev/null | head -n 1 || true)
+
+  if [[ -n "$plugin_file" && -f "$plugin_file" ]] && grep -Fq 'PluginRegistry.Registrar' "$plugin_file"; then
+    log "Patching uni_links AndroidPlugin.java (v1 embedding removal)..."
+    tmp_file=$(mktemp)
+    awk '
+      /public static void registerWith\(@NonNull PluginRegistry\.Registrar registrar\)/ { skip=1; next }
+      skip && /^    @Override$/ { skip=0 }
+      !skip { print }
+    ' "$plugin_file" > "$tmp_file"
+    mv "$tmp_file" "$plugin_file"
+    success "uni_links UniLinksPlugin.java patched."
+  fi
+
+  # 2. Patch build.gradle: force compileSdkVersion 35 (lStar attr requires API >= 31)
+  gradle_file=$(find "$HOME/.pub-cache/hosted/pub.dev" \
+    -path '*/uni_links-*/android/build.gradle' \
+    -type f 2>/dev/null | head -n 1 || true)
+
+  if [[ -n "$gradle_file" && -f "$gradle_file" ]] && grep -Eq 'compileSdkVersion [0-2][0-9]' "$gradle_file"; then
+    log "Patching uni_links build.gradle (compileSdkVersion → 35)..."
+    sed -i 's/compileSdkVersion [0-9]*/compileSdkVersion 35/' "$gradle_file"
+    success "uni_links build.gradle compileSdkVersion patched to 35."
+  fi
+}
+
+patch_legacy_workmanager_plugin() {
+  local base_dir plugin_bw plugin_wm tmp
+
+  base_dir=$(find "$HOME/.pub-cache/hosted/pub.dev" \
+    -maxdepth 1 -type d -name 'workmanager-*' 2>/dev/null | sort -V | tail -n 1 || true)
+  [[ -n "$base_dir" ]] || return 0
+
+  plugin_bw="$base_dir/android/src/main/kotlin/dev/fluttercommunity/workmanager/BackgroundWorker.kt"
+  plugin_wm="$base_dir/android/src/main/kotlin/dev/fluttercommunity/workmanager/WorkmanagerPlugin.kt"
+
+  # Patch BackgroundWorker.kt
+  if [[ -f "$plugin_bw" ]] && grep -Fq 'ShimPluginRegistry' "$plugin_bw"; then
+    log "Patching workmanager BackgroundWorker.kt..."
+    tmp=$(mktemp)
+    grep -v 'import io.flutter.embedding.engine.plugins.shim.ShimPluginRegistry' "$plugin_bw" \
+      | grep -v 'Backwards compatibility with v1' \
+      | grep -v 'pluginRegistryCallback?.registerWith(' \
+      > "$tmp"
+    mv "$tmp" "$plugin_bw"
+    success "workmanager BackgroundWorker.kt patched."
+  fi
+
+  # Patch WorkmanagerPlugin.kt
+  if [[ -f "$plugin_wm" ]] && grep -Fq 'PluginRegistrantCallback' "$plugin_wm"; then
+    log "Patching workmanager WorkmanagerPlugin.kt..."
+    tmp=$(mktemp)
+    awk '
+      /import io\.flutter\.plugin\.common\.PluginRegistry/ { next }
+      /var pluginRegistryCallback/ { next }
+      /fun registerWith\(registrar: PluginRegistry\.Registrar\)/ { skip=1; next }
+      skip && /^    \}$/ { skip=0; next }
+      skip { next }
+      /@Deprecated.*Use the Android v2/ { depr=1; next }
+      depr && /fun setPluginRegistrantCallback/ { depr=0; skip2=1; next }
+      skip2 && /^    \}$/ { skip2=0; next }
+      skip2 { next }
+      { print }
+    ' "$plugin_wm" > "$tmp"
+    mv "$tmp" "$plugin_wm"
+    success "workmanager WorkmanagerPlugin.kt patched."
+  fi
 }
 
 normalize_signing_config() {
@@ -177,7 +267,7 @@ SPLIT_PER_ABI=false
 BUILD_AAB=false
 for arg in "$@"; do
   case "$arg" in
-    --split-per-abi) SPLIT_PER_ABI=true ;;
+    --split-per-abi|--split-abi) SPLIT_PER_ABI=true ;;
     --aab)           BUILD_AAB=true ;;
     *) warn "Unknown argument: $arg" ;;
   esac
@@ -229,6 +319,7 @@ ANDROID_SDK_DIR=$(resolve_android_sdk_dir || true)
 if [[ -n "$ANDROID_SDK_DIR" ]]; then
   export ANDROID_HOME="$ANDROID_SDK_DIR"
   export ANDROID_SDK_ROOT="$ANDROID_SDK_DIR"
+  configure_flutter_android_sdk "$ANDROID_SDK_DIR"
   sync_local_properties_sdk "$ANDROID_SDK_DIR"
   log "Gradle will use Android SDK: $ANDROID_SDK_DIR"
   log "android/local.properties synced to sdk.dir=$ANDROID_SDK_DIR"
@@ -247,6 +338,9 @@ success "Clean done."
 log "Fetching dependencies..."
 flutter pub get
 success "Dependencies fetched."
+
+patch_legacy_uni_links_plugin
+patch_legacy_workmanager_plugin
 
 # ── Build ─────────────────────────────────────────────────────────────────────
 OUTPUT_DIR="$PROJECT_ROOT/build/app/outputs/flutter-apk"
