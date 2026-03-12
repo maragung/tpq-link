@@ -23,6 +23,8 @@ set -euo pipefail
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 PROJECT_ROOT="$(cd "$SCRIPT_DIR/.." && pwd)"
 DEFAULT_FLUTTER_NDK_VERSION="28.2.13676358"
+PUBSPEC_PATH="$PROJECT_ROOT/pubspec.yaml"
+LOCAL_PROPERTIES_PATH="$PROJECT_ROOT/android/local.properties"
 
 # ── Colors ────────────────────────────────────────────────────────────────────
 RED='\033[0;31m'; GREEN='\033[0;32m'; YELLOW='\033[1;33m'
@@ -32,6 +34,46 @@ log()    { echo -e "${CYAN}[BUILD]${RESET} $*"; }
 success(){ echo -e "${GREEN}[OK]${RESET}   $*"; }
 warn()   { echo -e "${YELLOW}[WARN]${RESET} $*"; }
 error()  { echo -e "${RED}[ERROR]${RESET} $*" >&2; exit 1; }
+
+bump_project_version() {
+  local version_line current_version current_name current_code
+  local major minor patch next_patch next_code next_version
+
+  [[ -f "$PUBSPEC_PATH" ]] || error "pubspec.yaml not found at: $PUBSPEC_PATH"
+
+  version_line=$(grep -E '^version:' "$PUBSPEC_PATH" | head -n 1 || true)
+  [[ -n "$version_line" ]] || error "Unable to find version in pubspec.yaml"
+
+  current_version=$(echo "$version_line" | sed -E 's/^version:[[:space:]]*//')
+  current_name=${current_version%%+*}
+  current_code=${current_version##*+}
+
+  IFS='.' read -r major minor patch <<< "$current_name"
+  [[ -n "$major" && -n "$minor" && -n "$patch" && "$current_code" =~ ^[0-9]+$ ]] || \
+    error "Unsupported version format in pubspec.yaml: $current_version"
+
+  next_patch=$((patch + 1))
+  next_code=$((current_code + 1))
+  next_version="$major.$minor.$next_patch+$next_code"
+
+  sed -i -E "s/^version:[[:space:]]*.*/version: $next_version/" "$PUBSPEC_PATH"
+
+  if [[ -f "$LOCAL_PROPERTIES_PATH" ]]; then
+    if grep -qE '^flutter\.versionName=' "$LOCAL_PROPERTIES_PATH"; then
+      sed -i -E "s/^flutter\.versionName=.*/flutter.versionName=$major.$minor.$next_patch/" "$LOCAL_PROPERTIES_PATH"
+    else
+      printf '\nflutter.versionName=%s\n' "$major.$minor.$next_patch" >> "$LOCAL_PROPERTIES_PATH"
+    fi
+
+    if grep -qE '^flutter\.versionCode=' "$LOCAL_PROPERTIES_PATH"; then
+      sed -i -E "s/^flutter\.versionCode=.*/flutter.versionCode=$next_code/" "$LOCAL_PROPERTIES_PATH"
+    else
+      printf 'flutter.versionCode=%s\n' "$next_code" >> "$LOCAL_PROPERTIES_PATH"
+    fi
+  fi
+
+  success "Version bumped: $current_version -> $next_version"
+}
 
 resolve_android_sdk_dir() {
   local candidate sdk_dir
@@ -311,6 +353,9 @@ normalize_signing_config
 
 # ── Enter project root ────────────────────────────────────────────────────────
 cd "$PROJECT_ROOT"
+
+# ── Auto increment app version ───────────────────────────────────────────────
+bump_project_version
 
 # ── Android SDK prerequisites ────────────────────────────────────────────────
 ensure_android_sdk_requirements
