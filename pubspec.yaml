@@ -1,7 +1,7 @@
 name: tpq_futuhil_hidayah
 description: Aplikasi Manajemen TPQ Futuhil Hidayah Wal Hikmah
 publish_to: 'none'
-version: 1.0.8+9
+version: 1.0.10+11
 
 environment:
   sdk: '>=3.0.0 <4.0.0'

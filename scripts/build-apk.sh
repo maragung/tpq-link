@@ -466,3 +466,4 @@ echo ""
 if [[ "$SIGNED" == "false" ]]; then
   warn "APK was built with debug keys. Run scripts/sign-apk.sh to configure release signing."
 fi
+exit 0
