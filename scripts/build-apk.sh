@@ -461,4 +461,6 @@ echo -e "${BOLD}═════════════════════�
 echo -e "${GREEN}${BOLD}  Build successful!                                   ${RESET}"
 echo -e "${BOLD}══════════════════════════════════════════════════════${RESET}"
 echo ""
-[[ "$SIGNED" == "false" ]] && warn "APK was built with debug keys. Run scripts/sign-apk.sh to configure release signing."
+if [[ "$SIGNED" == "false" ]]; then
+  warn "APK was built with debug keys. Run scripts/sign-apk.sh to configure release signing."
+fi
