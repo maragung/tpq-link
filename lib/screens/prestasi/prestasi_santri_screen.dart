@@ -7,6 +7,7 @@ import '../../services/api_service.dart';
 import '../../utils/constants.dart';
 import '../../utils/helpers.dart';
 import '../../widgets/app_ui.dart';
+import '../../widgets/santri_selector_field.dart';
 
 class PrestasiSantriScreen extends StatefulWidget {
   final bool embedded;
@@ -241,7 +242,7 @@ class _PrestasiSantriScreenState extends State<PrestasiSantriScreen> {
                       children: [
                         Expanded(
                           child: DropdownButtonFormField<int>(
-                            value: _tahun,
+                            initialValue: _tahun,
                             decoration: const InputDecoration(labelText: 'Tahun'),
                             items: List.generate(6, (i) {
                               final year = DateTime.now().year - i;
@@ -258,7 +259,7 @@ class _PrestasiSantriScreenState extends State<PrestasiSantriScreen> {
                         const SizedBox(width: 12),
                         Expanded(
                           child: DropdownButtonFormField<String>(
-                            value: _bulan.isEmpty ? '' : _bulan,
+                            initialValue: _bulan.isEmpty ? '' : _bulan,
                             decoration: const InputDecoration(labelText: 'Bulan'),
                             items: [
                               const DropdownMenuItem(value: '', child: Text('Semua')),
@@ -304,19 +305,15 @@ class _PrestasiSantriScreenState extends State<PrestasiSantriScreen> {
                       style: const TextStyle(color: AppColors.textSecondary, fontSize: 12),
                     ),
                     const SizedBox(height: 16),
-                    DropdownButtonFormField<int>(
+                    BasicSantriSelectorField(
+                      santriList: _santriList,
                       value: _selectedSantriId,
-                      decoration: const InputDecoration(
-                        labelText: 'Nama Santri',
-                        prefixIcon: Icon(Icons.person),
-                      ),
-                      items: _santriList
-                          .map((s) => DropdownMenuItem(
-                                value: s.id,
-                                child: Text('${s.noAbsen != null ? '${s.noAbsen}. ' : ''}${s.namaLengkap} (${s.jilid ?? '-'})'),
-                              ))
-                          .toList(),
-                      onChanged: _onSelectSantri,
+                      labelText: 'Nama Santri',
+                      helperText: 'Cari berdasarkan no. absen atau nama santri.',
+                      onSelected: (santri) => _onSelectSantri(santri.id),
+                      onCleared: _selectedSantriId == null
+                          ? null
+                          : () => _onSelectSantri(null),
                     ),
                     const SizedBox(height: 12),
                     Row(

@@ -6,6 +6,7 @@ import '../../services/api_service.dart';
 import '../../utils/constants.dart';
 import '../../utils/helpers.dart';
 import '../../widgets/pin_dialog.dart';
+import '../../widgets/santri_selector_field.dart';
 
 class BayarSPPScreen extends StatefulWidget {
   final bool embedded;
@@ -22,7 +23,9 @@ class _BayarSPPScreenState extends State<BayarSPPScreen> {
   final Set<int> _selectedBulan = {};
   String _metodeBayar = 'Tunai';
   final _keteranganController = TextEditingController();
+  final _nominalManualController = TextEditingController();
   bool _isLoading = false;
+
   /// Map bulan -> payment record {id, kode_invoice, nominal, tgl_bayar, metode_bayar}
   Map<int, Map<String, dynamic>> _paidPayments = {};
   bool _fetchingPayments = false;
@@ -36,7 +39,9 @@ class _BayarSPPScreenState extends State<BayarSPPScreen> {
       final prevId = _selectedSantriId;
       _selectedSantriId ??= args['santri_id'];
       _selectedSantriNama ??= args['nama'];
-      if (_selectedSantriId != null && !_didInitPayments && prevId != _selectedSantriId) {
+      if (_selectedSantriId != null &&
+          !_didInitPayments &&
+          prevId != _selectedSantriId) {
         _didInitPayments = true;
         _fetchPaidPayments(_selectedSantriId!);
       }
@@ -121,7 +126,8 @@ class _BayarSPPScreenState extends State<BayarSPPScreen> {
     if (pin == null || !mounted) return;
 
     setState(() => _isLoading = true);
-    final result = await context.read<PembayaranProvider>().deletePembayaran(id, pin);
+    final result =
+        await context.read<PembayaranProvider>().deletePembayaran(id, pin);
     if (!mounted) return;
     setState(() => _isLoading = false);
 
@@ -151,8 +157,8 @@ class _BayarSPPScreenState extends State<BayarSPPScreen> {
           ),
           Expanded(
             child: Text(value,
-                style: const TextStyle(
-                    fontSize: 13, fontWeight: FontWeight.w600)),
+                style:
+                    const TextStyle(fontSize: 13, fontWeight: FontWeight.w600)),
           ),
         ],
       ),
@@ -168,14 +174,25 @@ class _BayarSPPScreenState extends State<BayarSPPScreen> {
         border: Border.all(color: textColor.withAlpha(77)),
       ),
       child: Text(text,
-          style: TextStyle(fontSize: 10, color: textColor, fontWeight: FontWeight.w600)),
+          style: TextStyle(
+              fontSize: 10, color: textColor, fontWeight: FontWeight.w600)),
     );
   }
 
   @override
   void dispose() {
     _keteranganController.dispose();
+    _nominalManualController.dispose();
     super.dispose();
+  }
+
+  int? _manualNominal() {
+    final digits =
+        _nominalManualController.text.replaceAll(RegExp(r'[^0-9]'), '');
+    if (digits.isEmpty) return null;
+    final parsed = int.tryParse(digits);
+    if (parsed == null || parsed <= 0) return null;
+    return parsed;
   }
 
   /// Get the earliest unpaid required month for selected santri
@@ -218,47 +235,60 @@ class _BayarSPPScreenState extends State<BayarSPPScreen> {
     }
 
     final pin = await showPinDialog(context);
-    if (pin == null) return;
+    if (!mounted || pin == null) return;
 
     setState(() => _isLoading = true);
 
-    // ignore: use_build_context_synchronously
     final prov = context.read<PembayaranProvider>();
+    final santriList = context.read<SantriProvider>().santriList;
+    final matching = santriList.where((s) => s.id == _selectedSantriId);
+    final selectedSantri = matching.isEmpty ? null : matching.first;
+    final nominalManual = _manualNominal();
+    final nominalOtomatis = selectedSantri == null
+        ? 0
+        : _selectedBulan.length * selectedSantri.nominalSpp.toInt();
+    final nominalFinal = nominalManual ?? nominalOtomatis;
     final result = await prov.bayarSPP({
       'santri_id': _selectedSantriId,
       'bulan_list': _selectedBulan.toList()..sort(),
       'tahun_spp': _tahun,
+      'nominal': nominalFinal,
+      if (nominalManual != null) 'nominal_manual': nominalManual,
       'metode_bayar': _metodeBayar,
       'keterangan': _keteranganController.text.trim(),
       'pin': pin,
     });
 
+    if (!mounted) return;
     setState(() => _isLoading = false);
 
-    if (mounted) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(result['pesan'] ?? 'Berhasil'),
-          backgroundColor: result['success'] == true ? AppColors.success : AppColors.danger,
-        ),
-      );
-      if (result['success'] == true) {
-        context.read<SantriProvider>().fetchSantriStatus();
-        Navigator.pop(context);
-      }
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(result['pesan'] ?? 'Berhasil'),
+        backgroundColor:
+            result['success'] == true ? AppColors.success : AppColors.danger,
+      ),
+    );
+    if (result['success'] == true) {
+      context.read<SantriProvider>().fetchSantriStatus();
+      Navigator.pop(context);
     }
   }
 
   @override
   Widget build(BuildContext context) {
     final santriProv = context.watch<SantriProvider>();
-    final santriAktif = santriProv.santriList.where((s) => s.statusAktif).toList();
+    final santriAktif =
+        santriProv.santriList.where((s) => s.statusAktif).toList();
     final selectedSantri = _selectedSantriId != null
         ? santriAktif.where((s) => s.id == _selectedSantriId).firstOrNull
         : null;
-    final totalNominal = selectedSantri != null
+    final sortedSelectedMonths = _selectedBulan.toList()..sort();
+    final nominalManual = _manualNominal();
+    final nominalOtomatis = selectedSantri != null
         ? _selectedBulan.length * selectedSantri.nominalSpp
         : 0;
+    final totalNominal = nominalManual ?? nominalOtomatis;
 
     final content = SingleChildScrollView(
       padding: const EdgeInsets.all(16),
@@ -273,29 +303,35 @@ class _BayarSPPScreenState extends State<BayarSPPScreen> {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   const Text('Pilih Santri',
-                      style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
+                      style:
+                          TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
                   const SizedBox(height: 8),
-                  DropdownButtonFormField<int>(
+                  SantriSelectorField(
+                    santriList: santriAktif,
                     value: _selectedSantriId,
-                    decoration: const InputDecoration(
-                      hintText: 'Pilih santri...',
-                      prefixIcon: Icon(Icons.person),
-                    ),
-                    items: santriAktif
-                        .map((s) => DropdownMenuItem(
-                              value: s.id,
-                              child: Text('${s.namaLengkap} (${s.jilid ?? "-"})'),
-                            ))
-                        .toList(),
-                    onChanged: (v) {
+                    fallbackName: _selectedSantriNama,
+                    helperText: 'Cari berdasarkan no. absen atau nama santri.',
+                    onSelected: (santri) {
                       setState(() {
-                        _selectedSantriId = v;
+                        _selectedSantriId = santri.id;
+                        _selectedSantriNama = santri.namaLengkap;
                         _selectedBulan.clear();
                         _paidPayments.clear();
+                        _nominalManualController.clear();
                       });
-                      if (v != null) _fetchPaidPayments(v);
+                      _fetchPaidPayments(santri.id);
                     },
-                    isExpanded: true,
+                    onCleared: _selectedSantriId == null
+                        ? null
+                        : () {
+                            setState(() {
+                              _selectedSantriId = null;
+                              _selectedSantriNama = null;
+                              _selectedBulan.clear();
+                              _paidPayments.clear();
+                              _nominalManualController.clear();
+                            });
+                          },
                   ),
                   // Selected santri info
                   if (selectedSantri != null) ...[
@@ -305,7 +341,8 @@ class _BayarSPPScreenState extends State<BayarSPPScreen> {
                       decoration: BoxDecoration(
                         color: AppColors.primary.withAlpha(13),
                         borderRadius: BorderRadius.circular(8),
-                        border: Border.all(color: AppColors.primary.withAlpha(51)),
+                        border:
+                            Border.all(color: AppColors.primary.withAlpha(51)),
                       ),
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
@@ -335,14 +372,17 @@ class _BayarSPPScreenState extends State<BayarSPPScreen> {
                                 padding: const EdgeInsets.symmetric(
                                     horizontal: 10, vertical: 4),
                                 decoration: BoxDecoration(
-                                  color: AppColors.primary.withAlpha(26),
+                                  color: AppColors.background,
                                   borderRadius: BorderRadius.circular(8),
+                                  border: Border.all(color: AppColors.border),
                                 ),
                                 child: Text(
-                                  formatCurrency(selectedSantri.nominalSpp),
+                                  selectedSantri.noAbsen != null
+                                      ? 'No. ${selectedSantri.noAbsen}'
+                                      : 'Tanpa absen',
                                   style: const TextStyle(
                                     fontWeight: FontWeight.bold,
-                                    color: AppColors.primary,
+                                    color: AppColors.textPrimary,
                                     fontSize: 13,
                                   ),
                                 ),
@@ -397,42 +437,118 @@ class _BayarSPPScreenState extends State<BayarSPPScreen> {
           Card(
             child: Padding(
               padding: const EdgeInsets.all(16),
-              child: Row(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Expanded(
-                    child: DropdownButtonFormField<int>(
-                      value: _tahun,
-                      decoration: const InputDecoration(labelText: 'Tahun'),
-                      items: List.generate(5, (i) {
-                        final year = DateTime.now().year - i;
-                        return DropdownMenuItem(value: year, child: Text('$year'));
-                      }),
-                      onChanged: (v) {
-                        if (v == null) return;
-                        setState(() {
-                          _tahun = v;
-                          _selectedBulan.clear();
-                          _paidPayments.clear();
-                        });
-                        // Update provider year → triggers fetchSantriStatus
-                        // so bulan_status reflects the newly selected year
-                        context.read<SantriProvider>().selectedYear = v;
-                        if (_selectedSantriId != null) {
-                          _fetchPaidPayments(_selectedSantriId!);
-                        }
-                      },
+                  const Text(
+                    'Pengaturan Pembayaran',
+                    style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+                  ),
+                  const SizedBox(height: 12),
+                  DropdownButtonFormField<int>(
+                    initialValue: _tahun,
+                    decoration: const InputDecoration(labelText: 'Tahun'),
+                    items: List.generate(5, (i) {
+                      final year = DateTime.now().year - i;
+                      return DropdownMenuItem(
+                          value: year, child: Text('$year'));
+                    }),
+                    onChanged: (v) {
+                      if (v == null) return;
+                      setState(() {
+                        _tahun = v;
+                        _selectedBulan.clear();
+                        _paidPayments.clear();
+                        _nominalManualController.clear();
+                      });
+                      context.read<SantriProvider>().selectedYear = v;
+                      if (_selectedSantriId != null) {
+                        _fetchPaidPayments(_selectedSantriId!);
+                      }
+                    },
+                  ),
+                  const SizedBox(height: 14),
+                  Container(
+                    width: double.infinity,
+                    padding: const EdgeInsets.all(14),
+                    decoration: BoxDecoration(
+                      color: AppColors.background,
+                      borderRadius: BorderRadius.circular(16),
+                      border: Border.all(color: AppColors.border),
+                    ),
+                    child: Row(
+                      children: [
+                        Container(
+                          width: 42,
+                          height: 42,
+                          decoration: BoxDecoration(
+                            color: AppColors.primary.withAlpha(16),
+                            borderRadius: BorderRadius.circular(14),
+                          ),
+                          child: const Icon(
+                            Icons.payments_outlined,
+                            color: AppColors.primaryDark,
+                          ),
+                        ),
+                        const SizedBox(width: 12),
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              const Text(
+                                'Nominal per Bulan',
+                                style: TextStyle(
+                                  fontWeight: FontWeight.w700,
+                                  color: AppColors.textPrimary,
+                                ),
+                              ),
+                              const SizedBox(height: 2),
+                              const Text(
+                                'Dari pengaturan',
+                                style: TextStyle(
+                                  fontSize: 12,
+                                  color: AppColors.textSecondary,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                        Text(
+                          selectedSantri == null
+                              ? '-'
+                              : formatCurrency(selectedSantri.nominalSpp),
+                          style: const TextStyle(
+                            fontSize: 18,
+                            fontWeight: FontWeight.w800,
+                            color: AppColors.primaryDark,
+                          ),
+                        ),
+                      ],
                     ),
                   ),
-                  const SizedBox(width: 16),
-                  Expanded(
-                    child: DropdownButtonFormField<String>(
-                      value: _metodeBayar,
-                      decoration: const InputDecoration(labelText: 'Metode'),
-                      items: ['Tunai', 'Transfer']
-                          .map((m) => DropdownMenuItem(value: m, child: Text(m)))
-                          .toList(),
-                      onChanged: (v) => setState(() => _metodeBayar = v ?? 'Tunai'),
+                  const SizedBox(height: 14),
+                  TextFormField(
+                    controller: _nominalManualController,
+                    decoration: const InputDecoration(
+                      labelText: 'Masukkan nominal manual',
+                      hintText: 'Kosongkan untuk nominal otomatis',
+                      prefixIcon: Icon(Icons.edit_note),
+                      prefixText: 'Rp ',
                     ),
+                    keyboardType: TextInputType.number,
+                    onChanged: (_) => setState(() {}),
+                  ),
+                  const SizedBox(height: 14),
+                  DropdownButtonFormField<String>(
+                    initialValue: _metodeBayar,
+                    decoration: const InputDecoration(
+                      labelText: 'Metode Pembayaran',
+                    ),
+                    items: ['Tunai', 'Transfer']
+                        .map((m) => DropdownMenuItem(value: m, child: Text(m)))
+                        .toList(),
+                    onChanged: (v) =>
+                        setState(() => _metodeBayar = v ?? 'Tunai'),
                   ),
                 ],
               ),
@@ -448,7 +564,8 @@ class _BayarSPPScreenState extends State<BayarSPPScreen> {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   const Text('Pilih Bulan Pembayaran',
-                      style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
+                      style:
+                          TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
                   const SizedBox(height: 4),
                   // Info text
                   Container(
@@ -462,35 +579,34 @@ class _BayarSPPScreenState extends State<BayarSPPScreen> {
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         const Row(children: [
-                          Icon(Icons.info_outline, size: 14, color: AppColors.textSecondary),
+                          Icon(Icons.info_outline,
+                              size: 14, color: AppColors.textSecondary),
                           SizedBox(width: 4),
-                          Expanded(child: Text(
+                          Expanded(
+                              child: Text(
                             'Pembayaran wajib berurutan dari bulan belum lunas pertama.',
-                            style: TextStyle(fontSize: 11, color: AppColors.textSecondary),
-                          )),
-                        ]),
-                        const SizedBox(height: 2),
-                        const Row(children: [
-                          SizedBox(width: 18),
-                          Expanded(child: Text(
-                            'Bulan ungu = sebelum tanggal daftar (tidak wajib dibayar).',
-                            style: TextStyle(fontSize: 11, color: Colors.purple),
+                            style: TextStyle(
+                                fontSize: 11, color: AppColors.textSecondary),
                           )),
                         ]),
                         if (selectedSantri != null) ...[
                           const SizedBox(height: 2),
                           const Row(children: [
                             SizedBox(width: 18),
-                            Expanded(child: Text(
+                            Expanded(
+                                child: Text(
                               'Ketuk bulan hijau ✓ untuk melihat detail & batalkan.',
-                              style: TextStyle(fontSize: 11, color: AppColors.success),
+                              style: TextStyle(
+                                  fontSize: 11, color: AppColors.success),
                             )),
                           ]),
                           // Dynamic badges: wajib mulai + tunggakan
                           Builder(builder: (_) {
                             final bulanMulai = _getBulanMulai(selectedSantri);
-                            final earliest  = _getEarliestUnpaid(selectedSantri);
-                            if (bulanMulai == null && earliest == null) return const SizedBox();
+                            final earliest = _getEarliestUnpaid(selectedSantri);
+                            if (bulanMulai == null && earliest == null) {
+                              return const SizedBox();
+                            }
                             return Padding(
                               padding: const EdgeInsets.only(top: 6, left: 18),
                               child: Wrap(spacing: 6, runSpacing: 4, children: [
@@ -538,7 +654,7 @@ class _BayarSPPScreenState extends State<BayarSPPScreen> {
           const SizedBox(height: 8),
 
           // Paid payments list (for cancel)
-          if (_paidPayments.isNotEmpty) ...[  
+          if (_paidPayments.isNotEmpty) ...[
             Card(
               child: Padding(
                 padding: const EdgeInsets.all(16),
@@ -639,7 +755,7 @@ class _BayarSPPScreenState extends State<BayarSPPScreen> {
                           fontSize: 18, fontWeight: FontWeight.bold),
                     ),
                     Text(
-                      _selectedBulan.map((b) => namaBulan(b)).join(', '),
+                      sortedSelectedMonths.map((b) => namaBulan(b)).join(', '),
                       style: const TextStyle(
                           color: AppColors.textSecondary, fontSize: 13),
                     ),
@@ -697,7 +813,8 @@ class _BayarSPPScreenState extends State<BayarSPPScreen> {
 
   Widget _buildMonthGrid(dynamic selectedSantri) {
     // Determine the earliest unpaid required month
-    final earliest = selectedSantri != null ? _getEarliestUnpaid(selectedSantri) : null;
+    final earliest =
+        selectedSantri != null ? _getEarliestUnpaid(selectedSantri) : null;
     final selectedSorted = _selectedBulan.toList()..sort();
     final expectedNext = selectedSorted.isEmpty
         ? earliest
@@ -732,7 +849,9 @@ class _BayarSPPScreenState extends State<BayarSPPScreen> {
                       setState(() {
                         if (isSelected) {
                           // Allow removing only the last selected month
-                          final last = selectedSorted.isNotEmpty ? selectedSorted.last : null;
+                          final last = selectedSorted.isNotEmpty
+                              ? selectedSorted.last
+                              : null;
                           if (bulan == last) _selectedBulan.remove(bulan);
                         } else if (canSelect) {
                           _selectedBulan.add(bulan);
@@ -760,7 +879,8 @@ class _BayarSPPScreenState extends State<BayarSPPScreen> {
                   : beforeRegistration
                       ? Border.all(color: Colors.purple.withAlpha(77), width: 1)
                       : canSelect
-                          ? Border.all(color: AppColors.primary.withAlpha(102), width: 1)
+                          ? Border.all(
+                              color: AppColors.primary.withAlpha(102), width: 1)
                           : null,
             ),
             child: Column(
@@ -787,9 +907,11 @@ class _BayarSPPScreenState extends State<BayarSPPScreen> {
                 ),
                 const SizedBox(height: 2),
                 if (sudahBayar)
-                  const Icon(Icons.check_circle, size: 16, color: AppColors.success)
+                  const Icon(Icons.check_circle,
+                      size: 16, color: AppColors.success)
                 else if (beforeRegistration)
-                  const Icon(Icons.circle_outlined, size: 14, color: Colors.purple)
+                  const Icon(Icons.circle_outlined,
+                      size: 14, color: Colors.purple)
                 else if (!wajib)
                   const Icon(Icons.remove, size: 16, color: Colors.grey)
                 else if (isSelected)

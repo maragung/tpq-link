@@ -4,6 +4,7 @@ import '../../providers/santri_provider.dart';
 import '../../services/background_service.dart';
 import '../../utils/constants.dart';
 import '../../widgets/pin_dialog.dart';
+import '../../widgets/santri_selector_field.dart';
 
 class PembayaranLainScreen extends StatefulWidget {
   const PembayaranLainScreen({super.key});
@@ -87,161 +88,182 @@ class _PembayaranLainScreenState extends State<PembayaranLainScreen> {
     final santriProv = context.watch<SantriProvider>();
     final santriAktif =
         santriProv.santriList.where((s) => s.statusAktif).toList();
+    final selectedSantri = _selectedSantriId == null
+        ? null
+        : santriAktif.where((s) => s.id == _selectedSantriId).firstOrNull;
 
     return Scaffold(
       appBar: AppBar(title: const Text('Pembayaran Lain')),
-      body: SafeArea(top: false, child: SingleChildScrollView(
-        padding: const EdgeInsets.all(16),
-        child: Form(
-          key: _formKey,
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
-              // Info card
-              Card(
-                color: AppColors.info.withAlpha(20),
-                child: const Padding(
-                  padding: EdgeInsets.all(12),
-                  child: Row(
-                    children: [
-                      Icon(Icons.info_outline,
-                          color: AppColors.info, size: 20),
-                      SizedBox(width: 8),
-                      Expanded(
-                        child: Text(
-                          'Catat pembayaran selain SPP bulanan,\nseperti pendaftaran, buku, seragam, dll.',
-                          style: TextStyle(
-                              fontSize: 12, color: AppColors.info),
+      body: SafeArea(
+        top: false,
+        child: SingleChildScrollView(
+          padding: const EdgeInsets.all(16),
+          child: Form(
+            key: _formKey,
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                // Info card
+                Card(
+                  color: AppColors.info.withAlpha(20),
+                  child: const Padding(
+                    padding: EdgeInsets.all(12),
+                    child: Row(
+                      children: [
+                        Icon(Icons.info_outline,
+                            color: AppColors.info, size: 20),
+                        SizedBox(width: 8),
+                        Expanded(
+                          child: Text(
+                            'Catat pembayaran selain SPP bulanan,\nseperti pendaftaran, buku, seragam, dll.',
+                            style:
+                                TextStyle(fontSize: 12, color: AppColors.info),
+                          ),
                         ),
-                      ),
-                    ],
+                      ],
+                    ),
                   ),
                 ),
-              ),
-              const SizedBox(height: 12),
+                const SizedBox(height: 12),
 
-              // Santri selector
-              Card(
-                child: Padding(
-                  padding: const EdgeInsets.all(16),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      const Text('Pilih Santri',
-                          style: TextStyle(
-                              fontWeight: FontWeight.bold, fontSize: 16)),
-                      const SizedBox(height: 8),
-                      DropdownButtonFormField<int>(
-                        value: _selectedSantriId,
-                        decoration: const InputDecoration(
-                          hintText: 'Pilih santri...',
-                          prefixIcon: Icon(Icons.person),
+                // Santri selector
+                Card(
+                  child: Padding(
+                    padding: const EdgeInsets.all(16),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        const Text('Pilih Santri',
+                            style: TextStyle(
+                                fontWeight: FontWeight.bold, fontSize: 16)),
+                        const SizedBox(height: 8),
+                        SantriSelectorField(
+                          santriList: santriAktif,
+                          value: _selectedSantriId,
+                          helperText:
+                              'Cari berdasarkan no. absen atau nama santri.',
+                          onSelected: (santri) {
+                            setState(() => _selectedSantriId = santri.id);
+                          },
+                          onCleared: _selectedSantriId == null
+                              ? null
+                              : () => setState(() => _selectedSantriId = null),
                         ),
-                        items: santriAktif
-                            .map((s) => DropdownMenuItem(
-                                  value: s.id,
-                                  child: Text(
-                                      '${s.namaLengkap} (${s.jilid ?? "-"})'),
-                                ))
-                            .toList(),
-                        onChanged: (v) =>
-                            setState(() => _selectedSantriId = v),
-                        isExpanded: true,
-                      ),
-                    ],
+                        if (selectedSantri != null) ...[
+                          const SizedBox(height: 12),
+                          Container(
+                            width: double.infinity,
+                            padding: const EdgeInsets.all(12),
+                            decoration: BoxDecoration(
+                              color: AppColors.primary.withAlpha(12),
+                              borderRadius: BorderRadius.circular(12),
+                              border: Border.all(
+                                  color: AppColors.primary.withAlpha(40)),
+                            ),
+                            child: Text(
+                              '${selectedSantri.noAbsen != null ? 'No. ${selectedSantri.noAbsen} • ' : ''}${selectedSantri.jilid ?? '-'} • ${selectedSantri.isSubsidi ? 'Subsidi' : 'Non Subsidi'}',
+                              style: const TextStyle(
+                                fontSize: 12,
+                                fontWeight: FontWeight.w600,
+                                color: AppColors.primaryDark,
+                              ),
+                            ),
+                          ),
+                        ],
+                      ],
+                    ),
                   ),
                 ),
-              ),
-              const SizedBox(height: 12),
+                const SizedBox(height: 12),
 
-              // Kategori & Metode
-              Card(
-                child: Padding(
-                  padding: const EdgeInsets.all(16),
-                  child: Column(
-                    children: [
-                      DropdownButtonFormField<String>(
-                        value: _kategori,
-                        decoration:
-                            const InputDecoration(labelText: 'Kategori'),
-                        items: _kategoriList
-                            .map((k) => DropdownMenuItem(
-                                value: k, child: Text(k)))
-                            .toList(),
-                        onChanged: (v) =>
-                            setState(() => _kategori = v ?? _kategori),
-                      ),
-                      const SizedBox(height: 12),
-                      DropdownButtonFormField<String>(
-                        value: _metodeBayar,
-                        decoration: const InputDecoration(
-                            labelText: 'Metode Bayar'),
-                        items: ['Tunai', 'Transfer']
-                            .map((m) => DropdownMenuItem(
-                                value: m, child: Text(m)))
-                            .toList(),
-                        onChanged: (v) =>
-                            setState(() => _metodeBayar = v ?? 'Tunai'),
-                      ),
-                    ],
+                // Kategori & Metode
+                Card(
+                  child: Padding(
+                    padding: const EdgeInsets.all(16),
+                    child: Column(
+                      children: [
+                        DropdownButtonFormField<String>(
+                          initialValue: _kategori,
+                          decoration:
+                              const InputDecoration(labelText: 'Kategori'),
+                          items: _kategoriList
+                              .map((k) =>
+                                  DropdownMenuItem(value: k, child: Text(k)))
+                              .toList(),
+                          onChanged: (v) =>
+                              setState(() => _kategori = v ?? _kategori),
+                        ),
+                        const SizedBox(height: 12),
+                        DropdownButtonFormField<String>(
+                          initialValue: _metodeBayar,
+                          decoration:
+                              const InputDecoration(labelText: 'Metode Bayar'),
+                          items: ['Tunai', 'Transfer']
+                              .map((m) =>
+                                  DropdownMenuItem(value: m, child: Text(m)))
+                              .toList(),
+                          onChanged: (v) =>
+                              setState(() => _metodeBayar = v ?? 'Tunai'),
+                        ),
+                      ],
+                    ),
                   ),
                 ),
-              ),
-              const SizedBox(height: 12),
+                const SizedBox(height: 12),
 
-              // Nominal
-              TextFormField(
-                controller: _nominalController,
-                decoration: const InputDecoration(
-                  labelText: 'Nominal',
-                  prefixIcon: Icon(Icons.money),
-                  prefixText: 'Rp ',
+                // Nominal
+                TextFormField(
+                  controller: _nominalController,
+                  decoration: const InputDecoration(
+                    labelText: 'Nominal',
+                    prefixIcon: Icon(Icons.money),
+                    prefixText: 'Rp ',
+                  ),
+                  keyboardType: TextInputType.number,
+                  validator: (v) {
+                    if (v == null || v.trim().isEmpty) {
+                      return 'Nominal wajib diisi';
+                    }
+                    if ((int.tryParse(v.trim()) ?? 0) <= 0) {
+                      return 'Nominal harus lebih dari 0';
+                    }
+                    return null;
+                  },
                 ),
-                keyboardType: TextInputType.number,
-                validator: (v) {
-                  if (v == null || v.trim().isEmpty) {
-                    return 'Nominal wajib diisi';
-                  }
-                  if ((int.tryParse(v.trim()) ?? 0) <= 0) {
-                    return 'Nominal harus lebih dari 0';
-                  }
-                  return null;
-                },
-              ),
-              const SizedBox(height: 12),
+                const SizedBox(height: 12),
 
-              // Keterangan
-              TextFormField(
-                controller: _keteranganController,
-                decoration: const InputDecoration(
-                  labelText: 'Keterangan (opsional)',
-                  prefixIcon: Icon(Icons.note),
+                // Keterangan
+                TextFormField(
+                  controller: _keteranganController,
+                  decoration: const InputDecoration(
+                    labelText: 'Keterangan (opsional)',
+                    prefixIcon: Icon(Icons.note),
+                  ),
+                  maxLines: 2,
                 ),
-                maxLines: 2,
-              ),
-              const SizedBox(height: 24),
+                const SizedBox(height: 24),
 
-              // Submit
-              ElevatedButton.icon(
-                onPressed: _isLoading ? null : _submit,
-                icon: _isLoading
-                    ? const SizedBox(
-                        height: 20,
-                        width: 20,
-                        child: CircularProgressIndicator(
-                            strokeWidth: 2, color: Colors.white),
-                      )
-                    : const Icon(Icons.save),
-                label: Text(
-                    _isLoading ? 'Memproses...' : 'Simpan Pembayaran'),
-                style: ElevatedButton.styleFrom(
-                  padding: const EdgeInsets.symmetric(vertical: 16),
+                // Submit
+                ElevatedButton.icon(
+                  onPressed: _isLoading ? null : _submit,
+                  icon: _isLoading
+                      ? const SizedBox(
+                          height: 20,
+                          width: 20,
+                          child: CircularProgressIndicator(
+                              strokeWidth: 2, color: Colors.white),
+                        )
+                      : const Icon(Icons.save),
+                  label:
+                      Text(_isLoading ? 'Memproses...' : 'Simpan Pembayaran'),
+                  style: ElevatedButton.styleFrom(
+                    padding: const EdgeInsets.symmetric(vertical: 16),
+                  ),
                 ),
-              ),
-            ],
+              ],
+            ),
           ),
         ),
-      ),
       ),
     );
   }

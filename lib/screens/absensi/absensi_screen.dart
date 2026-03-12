@@ -81,7 +81,7 @@ class _AbsensiScreenState extends State<AbsensiScreen> {
 
   Future<void> _simpan() async {
     final pin = await showPinDialog(context, title: 'Verifikasi PIN');
-    if (pin == null || pin.isEmpty) return;
+    if (!mounted || pin == null || pin.isEmpty) return;
 
     final santriProv = context.read<SantriProvider>();
     final absensiProv = context.read<AbsensiProvider>();
@@ -160,7 +160,7 @@ class _AbsensiScreenState extends State<AbsensiScreen> {
             onTap: _changeDate,
             child: Container(
               padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-              color: AppColors.primary.withOpacity(0.1),
+              color: AppColors.primary.withAlpha(26),
               child: Row(
                 children: [
                   const Icon(Icons.calendar_today, size: 18, color: AppColors.primary),
@@ -229,7 +229,7 @@ class _AbsensiScreenState extends State<AbsensiScreen> {
                                       return Padding(
                                         padding: const EdgeInsets.only(left: 2),
                                         child: GestureDetector(
-                                          onTap: () => setState(() => _absensiMap[santri.id!] = s),
+                                          onTap: () => setState(() => _absensiMap[santri.id] = s),
                                           child: Container(
                                             width: 28,
                                             height: 28,
@@ -255,12 +255,12 @@ class _AbsensiScreenState extends State<AbsensiScreen> {
                                 : Container(
                                     padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                                     decoration: BoxDecoration(
-                                      color: _statusColor(status).withOpacity(0.15),
+                                      color: _statusColor(status).withAlpha(38),
                                       borderRadius: BorderRadius.circular(6),
                                     ),
                                     child: Text(status.toUpperCase(), style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold, color: _statusColor(status))),
                                   ),
-                            onTap: canManage ? () => _toggleStatus(santri.id!) : null,
+                            onTap: canManage ? () => _toggleStatus(santri.id) : null,
                           );
                         },
                       ),
@@ -275,7 +275,7 @@ class _AbsensiScreenState extends State<AbsensiScreen> {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
       decoration: BoxDecoration(
-        color: color.withOpacity(0.15),
+        color: color.withAlpha(38),
         borderRadius: BorderRadius.circular(12),
       ),
       child: Row(

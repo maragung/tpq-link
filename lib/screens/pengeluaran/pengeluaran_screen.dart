@@ -68,7 +68,7 @@ class _PengeluaranScreenState extends State<PengeluaranScreen> {
               ),
               const SizedBox(height: 12),
               DropdownButtonFormField<String>(
-                value: kategoriController.text,
+                initialValue: kategoriController.text,
                 decoration: const InputDecoration(
                   labelText: 'Kategori',
                   prefixIcon: Icon(Icons.category),

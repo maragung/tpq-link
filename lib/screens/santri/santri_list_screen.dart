@@ -24,11 +24,20 @@ class _SantriListScreenState extends State<SantriListScreen> {
   final Set<String> _selectedJilid = <String>{};
   _SantriSortBy _sortBy = _SantriSortBy.noAbsen;
   bool _sortAsc = true;
+  bool _filtersExpanded = false;
 
   @override
   void dispose() {
     _searchController.dispose();
     super.dispose();
+  }
+
+  int get _activeFilterCount {
+    var count = _selectedKategori.length + _selectedJilid.length;
+    if (_searchQuery.trim().isNotEmpty) count += 1;
+    if (_sortBy != _SantriSortBy.noAbsen) count += 1;
+    if (!_sortAsc) count += 1;
+    return count;
   }
 
   @override
@@ -48,272 +57,424 @@ class _SantriListScreenState extends State<SantriListScreen> {
         children: [
           Container(
             padding: const EdgeInsets.fromLTRB(16, 8, 16, 0),
-          child: AppFilterCard(
-          child: Padding(
-            padding: const EdgeInsets.fromLTRB(14, 10, 14, 10),
-            child: Column(
-            children: [
-              // Year Selector
-              Row(
-                children: [
-                  const Text('Tahun:', style: TextStyle(fontWeight: FontWeight.w500)),
-                  const SizedBox(width: 8),
-                  DropdownButton<int>(
-                    value: santriProv.selectedYear,
-                    items: List.generate(5, (i) {
-                      final year = DateTime.now().year - i;
-                      return DropdownMenuItem(value: year, child: Text('$year'));
-                    }),
-                    onChanged: (v) {
-                      if (v != null) santriProv.selectedYear = v;
-                    },
-                  ),
-                  const Spacer(),
-                  Text(
-                    '${santriList.length} santri',
-                    style: const TextStyle(color: AppColors.textSecondary, fontSize: 13),
-                  ),
-                ],
-              ),
-              // Search
-              TextField(
-                controller: _searchController,
-                decoration: InputDecoration(
-                  hintText: 'Cari nama atau NIK...',
-                  prefixIcon: const Icon(Icons.search, size: 20),
-                  suffixIcon: _searchQuery.isNotEmpty
-                      ? IconButton(
-                          icon: const Icon(Icons.clear, size: 20),
-                          onPressed: () {
-                            _searchController.clear();
-                            setState(() => _searchQuery = '');
-                          },
-                        )
-                      : null,
-                  border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
-                  contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
-                  isDense: true,
-                ),
-                onChanged: (v) => setState(() => _searchQuery = v),
-              ),
-              const SizedBox(height: 8),
-              // Category filter chips
-              SizedBox(
-                height: 36,
-                child: ListView(
-                  scrollDirection: Axis.horizontal,
+            child: AppFilterCard(
+              child: Padding(
+                padding: const EdgeInsets.fromLTRB(14, 12, 14, 12),
+                child: Column(
                   children: [
-                    for (final kat in ['Subsidi', 'Non Subsidi', 'Lunas', 'Laki-laki', 'Perempuan'])
-                      Padding(
-                        padding: const EdgeInsets.only(right: 8),
-                        child: ChoiceChip(
-                          label: Text(kat, style: const TextStyle(fontSize: 12)),
-                          selected: _selectedKategori.contains(kat),
-                          onSelected: (_) {
-                            setState(() {
-                              if (_selectedKategori.contains(kat)) {
-                                _selectedKategori.remove(kat);
-                              } else {
-                                _selectedKategori.add(kat);
-                              }
-                            });
-                          },
-                          selectedColor: AppColors.primary.withAlpha(51),
-                          labelStyle: TextStyle(
-                            color: _selectedKategori.contains(kat)
-                                ? AppColors.primary
-                                : AppColors.textSecondary,
+                    Row(
+                      children: [
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              const Text(
+                                'Daftar Santri',
+                                style: TextStyle(
+                                  fontSize: 16,
+                                  fontWeight: FontWeight.w800,
+                                ),
+                              ),
+                              const SizedBox(height: 4),
+                              Text(
+                                '${santriList.length} santri tampil',
+                                style: const TextStyle(
+                                  color: AppColors.textSecondary,
+                                  fontSize: 12,
+                                ),
+                              ),
+                            ],
                           ),
-                          padding: EdgeInsets.zero,
-                          visualDensity: VisualDensity.compact,
                         ),
-                      ),
-                  ],
-                ),
-              ),
-              const SizedBox(height: 8),
-              Align(
-                alignment: Alignment.centerLeft,
-                child: Wrap(
-                  spacing: 8,
-                  runSpacing: 8,
-                  children: [
-                    for (final jilid in jilidList)
-                      FilterChip(
-                        label: Text(jilid, style: const TextStyle(fontSize: 12)),
-                        selected: _selectedJilid.contains(jilid),
-                        onSelected: (_) {
-                          setState(() {
-                            if (_selectedJilid.contains(jilid)) {
-                              _selectedJilid.remove(jilid);
-                            } else {
-                              _selectedJilid.add(jilid);
-                            }
-                          });
-                        },
-                        selectedColor: AppColors.secondary.withAlpha(40),
-                        checkmarkColor: AppColors.secondary,
-                      ),
-                    ActionChip(
-                      avatar: const Icon(Icons.filter_alt_off, size: 16),
-                      label: const Text('Reset', style: TextStyle(fontSize: 12)),
-                      onPressed: () {
-                        setState(() {
-                          _selectedKategori.clear();
-                          _selectedJilid.clear();
-                          _sortBy = _SantriSortBy.noAbsen;
-                          _sortAsc = true;
-                        });
-                      },
-                    ),
-                  ],
-                ),
-              ),
-              const SizedBox(height: 8),
-              Row(
-                children: [
-                  Expanded(
-                    child: DropdownButtonFormField<_SantriSortBy>(
-                      value: _sortBy,
-                      decoration: InputDecoration(
-                        labelText: 'Sortir',
-                        border: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(12),
+                        Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 10),
+                          decoration: BoxDecoration(
+                            color: AppColors.background,
+                            borderRadius: BorderRadius.circular(12),
+                            border: Border.all(color: AppColors.border),
+                          ),
+                          child: DropdownButtonHideUnderline(
+                            child: DropdownButton<int>(
+                              value: santriProv.selectedYear,
+                              items: List.generate(5, (i) {
+                                final year = DateTime.now().year - i;
+                                return DropdownMenuItem(
+                                    value: year, child: Text('$year'));
+                              }),
+                              onChanged: (v) {
+                                if (v != null) santriProv.selectedYear = v;
+                              },
+                            ),
+                          ),
                         ),
-                        contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
-                        isDense: true,
-                      ),
-                      items: const [
-                        DropdownMenuItem(value: _SantriSortBy.noAbsen, child: Text('No. Absen')),
-                        DropdownMenuItem(value: _SantriSortBy.nama, child: Text('Nama')),
-                        DropdownMenuItem(value: _SantriSortBy.tglMendaftar, child: Text('Waktu Terdaftar')),
+                        const SizedBox(width: 8),
+                        FilledButton.tonalIcon(
+                          onPressed: () {
+                            setState(
+                                () => _filtersExpanded = !_filtersExpanded);
+                          },
+                          icon:
+                              Icon(_filtersExpanded ? Icons.tune : Icons.tune),
+                          label:
+                              Text(_filtersExpanded ? 'Sembunyikan' : 'Filter'),
+                          style: FilledButton.styleFrom(
+                            foregroundColor: AppColors.primaryDark,
+                            backgroundColor: AppColors.primary.withAlpha(22),
+                            visualDensity: VisualDensity.compact,
+                          ),
+                        ),
                       ],
-                      onChanged: (v) {
-                        if (v != null) setState(() => _sortBy = v);
-                      },
                     ),
-                  ),
-                  const SizedBox(width: 8),
-                  SizedBox(
-                    width: 120,
-                    child: DropdownButtonFormField<bool>(
-                      value: _sortAsc,
-                      decoration: InputDecoration(
-                        labelText: 'Arah',
-                        border: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(12),
-                        ),
-                        contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
-                        isDense: true,
-                      ),
-                      items: const [
-                        DropdownMenuItem(value: true, child: Text('Naik')),
-                        DropdownMenuItem(value: false, child: Text('Turun')),
-                      ],
-                      onChanged: (v) {
-                        if (v != null) setState(() => _sortAsc = v);
-                      },
-                    ),
-                  ),
-                ],
-              ),
-              const SizedBox(height: 8),
-            ],
-          ),
-          ),
-        ),
-        ),
-
-        // Santri List
-        Expanded(
-          child: santriProv.loading
-              ? const SkeletonList(count: 7, showSubtitle2: false)
-              : santriList.isEmpty
-                  ? const AppEmptyState(
-                      icon: Icons.people_outline,
-                      title: 'Belum ada data santri',
-                      subtitle: 'Data santri akan tampil di sini setelah berhasil ditambahkan atau dimuat dari server.',
-                    )
-                  : RefreshIndicator(
-                      onRefresh: () => santriProv.fetchSantriStatus(),
-                      child: ListView.builder(
-                        itemCount: santriList.length,
-                        padding: const EdgeInsets.all(16),
-                        itemBuilder: (context, index) {
-                          final s = santriList[index];
-                          return Card(
-                            margin: const EdgeInsets.only(bottom: 12),
-                            child: ListTile(
-                              leading: CircleAvatar(
-                                backgroundColor: s.statusAktif
-                                    ? AppColors.primary.withAlpha(51)
-                                    : Colors.grey.withAlpha(51),
+                    const SizedBox(height: 10),
+                    Row(
+                      children: [
+                        Expanded(
+                          child: Wrap(
+                            spacing: 8,
+                            runSpacing: 8,
+                            children: [
+                              Container(
+                                padding: const EdgeInsets.symmetric(
+                                    horizontal: 10, vertical: 6),
+                                decoration: BoxDecoration(
+                                  color: AppColors.primary.withAlpha(16),
+                                  borderRadius: BorderRadius.circular(999),
+                                ),
                                 child: Text(
-                                  s.namaLengkap.isNotEmpty
-                                      ? s.namaLengkap[0].toUpperCase()
-                                      : '?',
-                                  style: TextStyle(
-                                    fontWeight: FontWeight.bold,
-                                    color: s.statusAktif
-                                        ? AppColors.primary
-                                        : Colors.grey,
+                                  _activeFilterCount == 0
+                                      ? 'Filter tersembunyi'
+                                      : '$_activeFilterCount filter aktif',
+                                  style: const TextStyle(
+                                    fontSize: 11,
+                                    fontWeight: FontWeight.w700,
+                                    color: AppColors.primaryDark,
                                   ),
                                 ),
                               ),
-                              title: Text(s.namaLengkap,
-                                  style: const TextStyle(
-                                      fontWeight: FontWeight.w600)),
-                              subtitle: Text(
-                                'NIK: ${s.nik} • ${s.jilid ?? "-"}${s.jenisKelamin != null ? ' • ${s.jenisKelamin}' : ''}\nTerlunasi: ${s.bulanDibayarTotal}/${s.bulanSejakDaftarSampaiKini} • Tahun ini: ${s.bulanTerbayar}/${s.bulanWajib}',
-                                style: const TextStyle(
-                                    color: AppColors.textSecondary,
-                                    fontSize: 12),
+                              if (_searchQuery.trim().isNotEmpty)
+                                Container(
+                                  padding: const EdgeInsets.symmetric(
+                                      horizontal: 10, vertical: 6),
+                                  decoration: BoxDecoration(
+                                    color: AppColors.background,
+                                    borderRadius: BorderRadius.circular(999),
+                                    border: Border.all(color: AppColors.border),
+                                  ),
+                                  child: Text(
+                                    'Cari: ${_searchQuery.trim()}',
+                                    style: const TextStyle(fontSize: 11),
+                                  ),
+                                ),
+                            ],
+                          ),
+                        ),
+                        if (_activeFilterCount > 0)
+                          TextButton.icon(
+                            onPressed: () {
+                              _searchController.clear();
+                              setState(() {
+                                _searchQuery = '';
+                                _selectedKategori.clear();
+                                _selectedJilid.clear();
+                                _sortBy = _SantriSortBy.noAbsen;
+                                _sortAsc = true;
+                              });
+                            },
+                            icon: const Icon(Icons.restart_alt, size: 18),
+                            label: const Text('Reset'),
+                          ),
+                      ],
+                    ),
+                    AnimatedCrossFade(
+                      firstChild: const SizedBox.shrink(),
+                      secondChild: Padding(
+                        padding: const EdgeInsets.only(top: 12),
+                        child: Column(
+                          children: [
+                            TextField(
+                              controller: _searchController,
+                              decoration: InputDecoration(
+                                hintText: 'Cari no. absen, nama, atau NIK...',
+                                prefixIcon: const Icon(Icons.search, size: 20),
+                                suffixIcon: _searchQuery.isNotEmpty
+                                    ? IconButton(
+                                        icon: const Icon(Icons.clear, size: 20),
+                                        onPressed: () {
+                                          _searchController.clear();
+                                          setState(() => _searchQuery = '');
+                                        },
+                                      )
+                                    : null,
+                                border: OutlineInputBorder(
+                                  borderRadius: BorderRadius.circular(14),
+                                ),
+                                contentPadding: const EdgeInsets.symmetric(
+                                  horizontal: 12,
+                                  vertical: 12,
+                                ),
+                                isDense: true,
                               ),
-                              isThreeLine: true,
-                              trailing: Column(
-                                mainAxisAlignment:
-                                    MainAxisAlignment.center,
+                              onChanged: (v) =>
+                                  setState(() => _searchQuery = v),
+                            ),
+                            const SizedBox(height: 10),
+                            SizedBox(
+                              height: 38,
+                              child: ListView(
+                                scrollDirection: Axis.horizontal,
                                 children: [
-                                  Container(
-                                    padding: const EdgeInsets.symmetric(
-                                        horizontal: 8, vertical: 2),
-                                    decoration: BoxDecoration(
-                                      color: s.statusAktif
-                                          ? AppColors.success.withAlpha(26)
-                                          : AppColors.danger.withAlpha(26),
-                                      borderRadius:
-                                          BorderRadius.circular(8),
-                                    ),
-                                    child: Text(
-                                      s.statusAktif ? 'Aktif' : 'Nonaktif',
-                                      style: TextStyle(
-                                        fontSize: 11,
-                                        color: s.statusAktif
-                                            ? AppColors.success
-                                            : AppColors.danger,
+                                  for (final kat in [
+                                    'Subsidi',
+                                    'Non Subsidi',
+                                    'Lunas',
+                                    'Laki-laki',
+                                    'Perempuan'
+                                  ])
+                                    Padding(
+                                      padding: const EdgeInsets.only(right: 8),
+                                      child: ChoiceChip(
+                                        label: Text(kat,
+                                            style:
+                                                const TextStyle(fontSize: 12)),
+                                        selected:
+                                            _selectedKategori.contains(kat),
+                                        onSelected: (_) {
+                                          setState(() {
+                                            if (_selectedKategori
+                                                .contains(kat)) {
+                                              _selectedKategori.remove(kat);
+                                            } else {
+                                              _selectedKategori.add(kat);
+                                            }
+                                          });
+                                        },
+                                        selectedColor:
+                                            AppColors.primary.withAlpha(51),
+                                        labelStyle: TextStyle(
+                                          color: _selectedKategori.contains(kat)
+                                              ? AppColors.primary
+                                              : AppColors.textSecondary,
+                                        ),
+                                        padding: EdgeInsets.zero,
+                                        visualDensity: VisualDensity.compact,
                                       ),
                                     ),
-                                  ),
-                                  const SizedBox(height: 4),
-                                  Text(
-                                    '${s.bulanDibayarTotal}/${s.bulanSejakDaftarSampaiKini}',
-                                    style: const TextStyle(
-                                      fontSize: 11,
+                                ],
+                              ),
+                            ),
+                            const SizedBox(height: 10),
+                            Align(
+                              alignment: Alignment.centerLeft,
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  const Text(
+                                    'Filter Jilid (multi select)',
+                                    style: TextStyle(
+                                      fontSize: 12,
+                                      fontWeight: FontWeight.w700,
                                       color: AppColors.textSecondary,
-                                      fontWeight: FontWeight.w600,
                                     ),
+                                  ),
+                                  const SizedBox(height: 8),
+                                  Wrap(
+                                    spacing: 8,
+                                    runSpacing: 8,
+                                    children: [
+                                      for (final jilid in jilidList)
+                                        FilterChip(
+                                          label: Text(jilid,
+                                              style: const TextStyle(
+                                                  fontSize: 12)),
+                                          selected:
+                                              _selectedJilid.contains(jilid),
+                                          onSelected: (_) {
+                                            setState(() {
+                                              if (_selectedJilid
+                                                  .contains(jilid)) {
+                                                _selectedJilid.remove(jilid);
+                                              } else {
+                                                _selectedJilid.add(jilid);
+                                              }
+                                            });
+                                          },
+                                          selectedColor:
+                                              AppColors.secondary.withAlpha(40),
+                                          checkmarkColor: AppColors.secondary,
+                                        ),
+                                    ],
                                   ),
                                 ],
                               ),
-                              onTap: () => _showSantriActions(context, s),
                             ),
-                          );
-                        },
+                            const SizedBox(height: 10),
+                            Row(
+                              children: [
+                                Expanded(
+                                  child: DropdownButtonFormField<_SantriSortBy>(
+                                    initialValue: _sortBy,
+                                    decoration: InputDecoration(
+                                      labelText: 'Sortir',
+                                      border: OutlineInputBorder(
+                                        borderRadius: BorderRadius.circular(14),
+                                      ),
+                                      contentPadding:
+                                          const EdgeInsets.symmetric(
+                                              horizontal: 12, vertical: 10),
+                                      isDense: true,
+                                    ),
+                                    items: const [
+                                      DropdownMenuItem(
+                                          value: _SantriSortBy.noAbsen,
+                                          child: Text('No. Absen')),
+                                      DropdownMenuItem(
+                                          value: _SantriSortBy.nama,
+                                          child: Text('Nama')),
+                                      DropdownMenuItem(
+                                          value: _SantriSortBy.tglMendaftar,
+                                          child: Text('Waktu Terdaftar')),
+                                    ],
+                                    onChanged: (v) {
+                                      if (v != null) {
+                                        setState(() => _sortBy = v);
+                                      }
+                                    },
+                                  ),
+                                ),
+                                const SizedBox(width: 8),
+                                SizedBox(
+                                  width: 120,
+                                  child: DropdownButtonFormField<bool>(
+                                    initialValue: _sortAsc,
+                                    decoration: InputDecoration(
+                                      labelText: 'Arah',
+                                      border: OutlineInputBorder(
+                                        borderRadius: BorderRadius.circular(14),
+                                      ),
+                                      contentPadding:
+                                          const EdgeInsets.symmetric(
+                                              horizontal: 12, vertical: 10),
+                                      isDense: true,
+                                    ),
+                                    items: const [
+                                      DropdownMenuItem(
+                                          value: true, child: Text('Naik')),
+                                      DropdownMenuItem(
+                                          value: false, child: Text('Turun')),
+                                    ],
+                                    onChanged: (v) {
+                                      if (v != null) {
+                                        setState(() => _sortAsc = v);
+                                      }
+                                    },
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ],
+                        ),
                       ),
+                      crossFadeState: _filtersExpanded
+                          ? CrossFadeState.showSecond
+                          : CrossFadeState.showFirst,
+                      duration: const Duration(milliseconds: 220),
+                      sizeCurve: Curves.easeInOut,
                     ),
-        ),
-      ],
-    ),
+                  ],
+                ),
+              ),
+            ),
+          ),
+
+          // Santri List
+          Expanded(
+            child: santriProv.loading
+                ? const SkeletonList(count: 7, showSubtitle2: false)
+                : santriList.isEmpty
+                    ? const AppEmptyState(
+                        icon: Icons.people_outline,
+                        title: 'Belum ada data santri',
+                        subtitle:
+                            'Data santri akan tampil di sini setelah berhasil ditambahkan atau dimuat dari server.',
+                      )
+                    : RefreshIndicator(
+                        onRefresh: () => santriProv.fetchSantriStatus(),
+                        child: ListView.builder(
+                          itemCount: santriList.length,
+                          padding: const EdgeInsets.all(16),
+                          itemBuilder: (context, index) {
+                            final s = santriList[index];
+                            return Card(
+                              margin: const EdgeInsets.only(bottom: 12),
+                              child: ListTile(
+                                leading: CircleAvatar(
+                                  backgroundColor: s.statusAktif
+                                      ? AppColors.primary.withAlpha(51)
+                                      : Colors.grey.withAlpha(51),
+                                  child: Text(
+                                    s.namaLengkap.isNotEmpty
+                                        ? s.namaLengkap[0].toUpperCase()
+                                        : '?',
+                                    style: TextStyle(
+                                      fontWeight: FontWeight.bold,
+                                      color: s.statusAktif
+                                          ? AppColors.primary
+                                          : Colors.grey,
+                                    ),
+                                  ),
+                                ),
+                                title: Text(s.namaLengkap,
+                                    style: const TextStyle(
+                                        fontWeight: FontWeight.w600)),
+                                subtitle: Text(
+                                  'NIK: ${s.nik} • ${s.jilid ?? "-"}${s.jenisKelamin != null ? ' • ${s.jenisKelamin}' : ''}\nTerlunasi: ${s.bulanDibayarTotal}/${s.bulanSejakDaftarSampaiKini} • Tahun ini: ${s.bulanTerbayar}/${s.bulanWajib}',
+                                  style: const TextStyle(
+                                      color: AppColors.textSecondary,
+                                      fontSize: 12),
+                                ),
+                                isThreeLine: true,
+                                trailing: Column(
+                                  mainAxisAlignment: MainAxisAlignment.center,
+                                  children: [
+                                    Container(
+                                      padding: const EdgeInsets.symmetric(
+                                          horizontal: 8, vertical: 2),
+                                      decoration: BoxDecoration(
+                                        color: s.statusAktif
+                                            ? AppColors.success.withAlpha(26)
+                                            : AppColors.danger.withAlpha(26),
+                                        borderRadius: BorderRadius.circular(8),
+                                      ),
+                                      child: Text(
+                                        s.statusAktif ? 'Aktif' : 'Nonaktif',
+                                        style: TextStyle(
+                                          fontSize: 11,
+                                          color: s.statusAktif
+                                              ? AppColors.success
+                                              : AppColors.danger,
+                                        ),
+                                      ),
+                                    ),
+                                    const SizedBox(height: 4),
+                                    Text(
+                                      '${s.bulanDibayarTotal}/${s.bulanSejakDaftarSampaiKini}',
+                                      style: const TextStyle(
+                                        fontSize: 11,
+                                        color: AppColors.textSecondary,
+                                        fontWeight: FontWeight.w600,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                                onTap: () => _showSantriActions(context, s),
+                              ),
+                            );
+                          },
+                        ),
+                      ),
+          ),
+        ],
+      ),
     );
   }
 
@@ -322,25 +483,35 @@ class _SantriListScreenState extends State<SantriListScreen> {
       if (_searchQuery.isNotEmpty) {
         final q = _searchQuery.toLowerCase();
         if (!s.namaLengkap.toLowerCase().contains(q) &&
+            !(s.noAbsen?.toString().contains(q) ?? false) &&
             !s.nik.toLowerCase().contains(q) &&
             !(s.jenisKelamin?.toLowerCase().contains(q) ?? false)) {
           return false;
         }
       }
 
-      final subsidiFilter = _selectedKategori.where((e) => e == 'Subsidi' || e == 'Non Subsidi').toList();
+      final subsidiFilter = _selectedKategori
+          .where((e) => e == 'Subsidi' || e == 'Non Subsidi')
+          .toList();
       if (subsidiFilter.length == 1) {
         if (subsidiFilter.first == 'Subsidi' && !s.isSubsidi) return false;
         if (subsidiFilter.first == 'Non Subsidi' && s.isSubsidi) return false;
       }
 
-      final genderFilter = _selectedKategori.where((e) => e == 'Laki-laki' || e == 'Perempuan').toList();
+      final genderFilter = _selectedKategori
+          .where((e) => e == 'Laki-laki' || e == 'Perempuan')
+          .toList();
       if (genderFilter.length == 1) {
-        if (genderFilter.first == 'Laki-laki' && s.jenisKelamin != 'Laki-laki') return false;
-        if (genderFilter.first == 'Perempuan' && s.jenisKelamin != 'Perempuan') return false;
+        if (genderFilter.first == 'Laki-laki' && s.jenisKelamin != 'Laki-laki') {
+          return false;
+        }
+        if (genderFilter.first == 'Perempuan' && s.jenisKelamin != 'Perempuan') {
+          return false;
+        }
       }
 
-      if (_selectedKategori.contains('Lunas') && !(s.statusAktif && s.bulanBelumBayar == 0)) {
+      if (_selectedKategori.contains('Lunas') &&
+          !(s.statusAktif && s.bulanBelumBayar == 0)) {
         return false;
       }
 
@@ -358,12 +529,16 @@ class _SantriListScreenState extends State<SantriListScreen> {
           result = (a.noAbsen ?? 999999).compareTo(b.noAbsen ?? 999999);
           break;
         case _SantriSortBy.tglMendaftar:
-          final aDate = DateTime.tryParse(a.tglMendaftar ?? '') ?? DateTime(1970);
-          final bDate = DateTime.tryParse(b.tglMendaftar ?? '') ?? DateTime(1970);
+          final aDate =
+              DateTime.tryParse(a.tglMendaftar ?? '') ?? DateTime(1970);
+          final bDate =
+              DateTime.tryParse(b.tglMendaftar ?? '') ?? DateTime(1970);
           result = aDate.compareTo(bDate);
           break;
         case _SantriSortBy.nama:
-          result = a.namaLengkap.toLowerCase().compareTo(b.namaLengkap.toLowerCase());
+          result = a.namaLengkap
+              .toLowerCase()
+              .compareTo(b.namaLengkap.toLowerCase());
           break;
       }
       return _sortAsc ? result : -result;
@@ -389,7 +564,8 @@ class _SantriListScreenState extends State<SantriListScreen> {
             mainAxisSize: MainAxisSize.min,
             children: [
               Container(
-                width: 40, height: 4,
+                width: 40,
+                height: 4,
                 margin: const EdgeInsets.only(bottom: 8),
                 decoration: BoxDecoration(
                   color: Colors.grey[300],
@@ -405,10 +581,13 @@ class _SantriListScreenState extends State<SantriListScreen> {
                           ? AppColors.primary.withAlpha(51)
                           : Colors.grey.withAlpha(51),
                       child: Text(
-                        s.namaLengkap.isNotEmpty ? s.namaLengkap[0].toUpperCase() : '?',
+                        s.namaLengkap.isNotEmpty
+                            ? s.namaLengkap[0].toUpperCase()
+                            : '?',
                         style: TextStyle(
                           fontWeight: FontWeight.bold,
-                          color: s.statusAktif ? AppColors.primary : Colors.grey,
+                          color:
+                              s.statusAktif ? AppColors.primary : Colors.grey,
                         ),
                       ),
                     ),
@@ -418,26 +597,38 @@ class _SantriListScreenState extends State<SantriListScreen> {
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
                           Text(s.namaLengkap,
-                              style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 15)),
-                          Text('${s.jilid ?? '-'} • ${s.isSubsidi ? 'Subsidi' : 'Non Subsidi'}',
-                              style: const TextStyle(fontSize: 12, color: AppColors.textSecondary)),
-                          if (s.jenisKelamin != null && s.jenisKelamin!.isNotEmpty)
+                              style: const TextStyle(
+                                  fontWeight: FontWeight.bold, fontSize: 15)),
+                          Text(
+                              '${s.jilid ?? '-'} • ${s.isSubsidi ? 'Subsidi' : 'Non Subsidi'}',
+                              style: const TextStyle(
+                                  fontSize: 12,
+                                  color: AppColors.textSecondary)),
+                          if (s.jenisKelamin != null &&
+                              s.jenisKelamin!.isNotEmpty)
                             Text(s.jenisKelamin!,
-                                style: const TextStyle(fontSize: 11, color: AppColors.textSecondary)),
+                                style: const TextStyle(
+                                    fontSize: 11,
+                                    color: AppColors.textSecondary)),
                         ],
                       ),
                     ),
                     Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 8, vertical: 3),
                       decoration: BoxDecoration(
-                        color: s.statusAktif ? AppColors.success.withAlpha(26) : AppColors.danger.withAlpha(26),
+                        color: s.statusAktif
+                            ? AppColors.success.withAlpha(26)
+                            : AppColors.danger.withAlpha(26),
                         borderRadius: BorderRadius.circular(8),
                       ),
                       child: Text(
                         s.statusAktif ? 'Aktif' : 'Nonaktif',
                         style: TextStyle(
                           fontSize: 11,
-                          color: s.statusAktif ? AppColors.success : AppColors.danger,
+                          color: s.statusAktif
+                              ? AppColors.success
+                              : AppColors.danger,
                         ),
                       ),
                     ),
@@ -471,7 +662,8 @@ class _SantriListScreenState extends State<SantriListScreen> {
                   subtitle: const Text('Ubah data santri'),
                   onTap: () {
                     Navigator.pop(context);
-                    Navigator.pushNamed(context, '/santri/tambah', arguments: s.id);
+                    Navigator.pushNamed(context, '/santri/tambah',
+                        arguments: s.id);
                   },
                 ),
               ],
@@ -483,14 +675,16 @@ class _SantriListScreenState extends State<SantriListScreen> {
                         : AppColors.success.withAlpha(26),
                     child: Icon(
                       s.statusAktif ? Icons.person_off : Icons.person_add,
-                      color: s.statusAktif ? AppColors.danger : AppColors.success,
+                      color:
+                          s.statusAktif ? AppColors.danger : AppColors.success,
                     ),
                   ),
                   title: Text(
                     s.statusAktif ? 'Nonaktifkan' : 'Aktifkan Kembali',
                     style: TextStyle(
                       fontWeight: FontWeight.w600,
-                      color: s.statusAktif ? AppColors.danger : AppColors.success,
+                      color:
+                          s.statusAktif ? AppColors.danger : AppColors.success,
                     ),
                   ),
                   subtitle: Text(s.statusAktif
@@ -498,7 +692,8 @@ class _SantriListScreenState extends State<SantriListScreen> {
                       : 'Aktifkan kembali santri'),
                   onTap: () {
                     Navigator.pop(context);
-                    _confirmStatusChange(context, s, s.statusAktif ? 'nonaktif' : 'aktifkan');
+                    _confirmStatusChange(
+                        context, s, s.statusAktif ? 'nonaktif' : 'aktifkan');
                   },
                 ),
                 if (s.statusAktif)
@@ -525,7 +720,8 @@ class _SantriListScreenState extends State<SantriListScreen> {
                   ),
                   title: const Text('Hapus Santri',
                       style: TextStyle(
-                          fontWeight: FontWeight.w600, color: AppColors.danger)),
+                          fontWeight: FontWeight.w600,
+                          color: AppColors.danger)),
                   subtitle: const Text('Hapus permanen data santri'),
                   onTap: () {
                     Navigator.pop(context);
@@ -535,7 +731,8 @@ class _SantriListScreenState extends State<SantriListScreen> {
               ListTile(
                 leading: const CircleAvatar(
                   backgroundColor: Color(0xFFF3F4F6),
-                  child: Icon(Icons.info_outline, color: AppColors.textSecondary),
+                  child:
+                      Icon(Icons.info_outline, color: AppColors.textSecondary),
                 ),
                 title: const Text('Lihat Detail',
                     style: TextStyle(fontWeight: FontWeight.w600)),
@@ -562,17 +759,17 @@ class _SantriListScreenState extends State<SantriListScreen> {
             ? 'Konfirmasi Kelulusan'
             : action == 'hapus'
                 ? 'Hapus Santri'
-            : action == 'aktifkan'
-                ? 'Aktifkan Santri'
-                : 'Nonaktifkan Santri'),
+                : action == 'aktifkan'
+                    ? 'Aktifkan Santri'
+                    : 'Nonaktifkan Santri'),
         content: Text(
           action == 'luluskan'
               ? 'Tandai ${s.namaLengkap} sebagai LULUS? Santri akan dipindahkan ke Alumni.'
               : action == 'hapus'
                   ? 'Hapus permanen ${s.namaLengkap}? Riwayat pembayaran, pembayaran lain, absensi, dan buku prestasi santri ini juga akan ikut terhapus.'
-              : action == 'aktifkan'
-                  ? 'Aktifkan kembali santri ${s.namaLengkap}?'
-                  : 'Nonaktifkan santri ${s.namaLengkap}? SPP tidak lagi diwajibkan.',
+                  : action == 'aktifkan'
+                      ? 'Aktifkan kembali santri ${s.namaLengkap}?'
+                      : 'Nonaktifkan santri ${s.namaLengkap}? SPP tidak lagi diwajibkan.',
         ),
         actions: [
           TextButton(
@@ -590,11 +787,11 @@ class _SantriListScreenState extends State<SantriListScreen> {
             ),
             child: Text(action == 'luluskan'
                 ? '🎓 Luluskan'
-              : action == 'hapus'
-                ? '🗑️ Hapus'
-                : action == 'aktifkan'
-                    ? 'Aktifkan'
-                    : 'Nonaktifkan'),
+                : action == 'hapus'
+                    ? '🗑️ Hapus'
+                    : action == 'aktifkan'
+                        ? 'Aktifkan'
+                        : 'Nonaktifkan'),
           ),
         ],
       ),
@@ -669,7 +866,9 @@ class _SantriListScreenState extends State<SantriListScreen> {
                         ? AppColors.primary.withAlpha(51)
                         : Colors.grey.withAlpha(51),
                     child: Text(
-                      s.namaLengkap.isNotEmpty ? s.namaLengkap[0].toUpperCase() : '?',
+                      s.namaLengkap.isNotEmpty
+                          ? s.namaLengkap[0].toUpperCase()
+                          : '?',
                       style: TextStyle(
                         fontSize: 24,
                         fontWeight: FontWeight.bold,
@@ -688,7 +887,8 @@ class _SantriListScreenState extends State<SantriListScreen> {
                               fontSize: 18, fontWeight: FontWeight.bold),
                         ),
                         Text('NIK: ${s.nik}',
-                            style: const TextStyle(color: AppColors.textSecondary)),
+                            style: const TextStyle(
+                                color: AppColors.textSecondary)),
                         Row(
                           children: [
                             Container(
@@ -721,8 +921,8 @@ class _SantriListScreenState extends State<SantriListScreen> {
                                 ),
                                 child: const Text(
                                   'Subsidi',
-                                  style:
-                                      TextStyle(fontSize: 11, color: AppColors.info),
+                                  style: TextStyle(
+                                      fontSize: 11, color: AppColors.info),
                                 ),
                               ),
                             ],
@@ -739,7 +939,8 @@ class _SantriListScreenState extends State<SantriListScreen> {
               _DetailRow('Jenis Kelamin', s.jenisKelamin ?? '-'),
               _DetailRow('Jilid', s.jilid ?? '-'),
               if (s.noAbsen != null) _DetailRow('No. Absen', '${s.noAbsen}'),
-              _DetailRow('Terlunasi', '${s.bulanDibayarTotal}/${s.bulanSejakDaftarSampaiKini} bulan'),
+              _DetailRow('Terlunasi',
+                  '${s.bulanDibayarTotal}/${s.bulanSejakDaftarSampaiKini} bulan'),
               _DetailRow('Nominal SPP', formatCurrency(s.nominalSpp)),
               const Divider(height: 24),
 
@@ -754,9 +955,12 @@ class _SantriListScreenState extends State<SantriListScreen> {
               Row(
                 mainAxisAlignment: MainAxisAlignment.spaceAround,
                 children: [
-                  _SummaryChip('Terbayar', '${s.bulanTerbayar}', AppColors.success),
-                  _SummaryChip('Belum', '${s.bulanBelumBayar}', AppColors.danger),
-                  _SummaryChip('Total', formatCurrency(s.totalBayar), AppColors.primary),
+                  _SummaryChip(
+                      'Terbayar', '${s.bulanTerbayar}', AppColors.success),
+                  _SummaryChip(
+                      'Belum', '${s.bulanBelumBayar}', AppColors.danger),
+                  _SummaryChip(
+                      'Total', formatCurrency(s.totalBayar), AppColors.primary),
                 ],
               ),
               const SizedBox(height: 20),
@@ -774,22 +978,27 @@ class _SantriListScreenState extends State<SantriListScreen> {
                                 arguments: s.id);
                           },
                           icon: const Icon(Icons.edit, size: 18),
-                          label: Text((user?.isPengajar ?? false) ? 'Ubah Jilid' : 'Edit'),
+                          label: Text((user?.isPengajar ?? false)
+                              ? 'Ubah Jilid'
+                              : 'Edit'),
                         ),
                       ),
-                    if (canEditSantri && canManageStatus) const SizedBox(width: 8),
+                    if (canEditSantri && canManageStatus)
+                      const SizedBox(width: 8),
                     if (canManageStatus)
                       Expanded(
                         child: OutlinedButton.icon(
                           onPressed: () async {
                             Navigator.pop(context);
-                            _confirmStatusChange(
-                                context, s, s.statusAktif ? 'nonaktif' : 'aktifkan');
+                            _confirmStatusChange(context, s,
+                                s.statusAktif ? 'nonaktif' : 'aktifkan');
                           },
                           icon: Icon(
                             s.statusAktif ? Icons.person_off : Icons.person_add,
                             size: 18,
-                            color: s.statusAktif ? AppColors.danger : AppColors.success,
+                            color: s.statusAktif
+                                ? AppColors.danger
+                                : AppColors.success,
                           ),
                           label: Text(
                             s.statusAktif ? 'Nonaktifkan' : 'Aktifkan',
@@ -818,8 +1027,8 @@ class _SantriListScreenState extends State<SantriListScreen> {
                             Navigator.pop(context);
                             _confirmStatusChange(context, s, 'luluskan');
                           },
-                          icon: const Icon(Icons.school, size: 18,
-                              color: Colors.amber),
+                          icon: const Icon(Icons.school,
+                              size: 18, color: Colors.amber),
                           label: const Text('Luluskan',
                               style: TextStyle(color: Colors.amber)),
                           style: OutlinedButton.styleFrom(
@@ -952,11 +1161,13 @@ class _DetailRow extends StatelessWidget {
           SizedBox(
             width: 120,
             child: Text(label,
-                style: const TextStyle(color: AppColors.textSecondary, fontSize: 14)),
+                style: const TextStyle(
+                    color: AppColors.textSecondary, fontSize: 14)),
           ),
           Expanded(
             child: Text(value,
-                style: const TextStyle(fontWeight: FontWeight.w500, fontSize: 14)),
+                style:
+                    const TextStyle(fontWeight: FontWeight.w500, fontSize: 14)),
           ),
         ],
       ),
@@ -979,7 +1190,8 @@ class _SummaryChip extends StatelessWidget {
             style: TextStyle(
                 fontWeight: FontWeight.bold, fontSize: 16, color: color)),
         Text(label,
-            style: const TextStyle(fontSize: 11, color: AppColors.textSecondary)),
+            style:
+                const TextStyle(fontSize: 11, color: AppColors.textSecondary)),
       ],
     );
   }

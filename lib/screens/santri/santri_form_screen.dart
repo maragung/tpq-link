@@ -263,7 +263,7 @@ class _SantriFormScreenState extends State<SantriFormScreen> {
                           ),
                           const SizedBox(height: 16),
                           DropdownButtonFormField<String>(
-                            value: _jenisKelamin.isEmpty ? null : _jenisKelamin,
+                            initialValue: _jenisKelamin.isEmpty ? null : _jenisKelamin,
                             decoration: const InputDecoration(
                               labelText: 'Jenis Kelamin',
                               prefixIcon: Icon(Icons.wc),
@@ -283,7 +283,7 @@ class _SantriFormScreenState extends State<SantriFormScreen> {
                           ),
                           const SizedBox(height: 16),
                           DropdownButtonFormField<String>(
-                            value: _jilid,
+                            initialValue: _jilid,
                             decoration: const InputDecoration(
                               labelText: 'Jilid/Kelas',
                               prefixIcon: Icon(Icons.book),
@@ -362,7 +362,7 @@ class _SantriFormScreenState extends State<SantriFormScreen> {
                             onChanged: isPengajarEditOnly
                                 ? null
                                 : (v) => setState(() => _isSubsidi = v),
-                            activeColor: AppColors.primary,
+                            activeThumbColor: AppColors.primary,
                           ),
                           const SizedBox(height: 24),
                           ElevatedButton(
