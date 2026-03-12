@@ -1,5 +1,6 @@
 import 'dart:async';
 import 'dart:convert';
+import 'dart:math';
 import 'package:connectivity_plus/connectivity_plus.dart';
 import 'package:http/http.dart' as http;
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
@@ -62,6 +63,14 @@ class ApiService {
     return headers;
   }
 
+  /// Generates a unique idempotency key for POST requests.
+  static String _generateIdempotencyKey() {
+    final rng = Random.secure();
+    final bytes = List<int>.generate(16, (_) => rng.nextInt(256));
+    final hex = bytes.map((b) => b.toRadixString(16).padLeft(2, '0')).join();
+    return 'flutter-${DateTime.now().millisecondsSinceEpoch}-$hex';
+  }
+
   /// Returns true when the device has any network connectivity.
   static Future<bool> _isConnected() async {
     final results = await Connectivity().checkConnectivity();
@@ -96,8 +105,12 @@ class ApiService {
       return {'success': false, 'pesan': _msgNoInternet};
     }
     try {
+      final headers = {
+        ..._headers,
+        'x-idempotency-key': _generateIdempotencyKey(),
+      };
       final response = await _client
-          .post(Uri.parse(url), headers: _headers, body: jsonEncode(body ?? {}))
+          .post(Uri.parse(url), headers: headers, body: jsonEncode(body ?? {}))
           .timeout(const Duration(seconds: 30));
       return _handleResponse(response);
     } catch (e) {

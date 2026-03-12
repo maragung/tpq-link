@@ -113,6 +113,7 @@ class SantriSelectorField extends StatelessWidget {
       isScrollControlled: true,
       backgroundColor: Colors.transparent,
       builder: (context) {
+        bool sortByAbsen = true;
         return StatefulBuilder(
           builder: (context, setModalState) {
             final filtered = santriList.where((santri) {
@@ -123,10 +124,12 @@ class SantriSelectorField extends StatelessWidget {
                   noAbsen.contains(normalized);
             }).toList()
               ..sort((a, b) {
-                final aNo = a.noAbsen ?? 999999;
-                final bNo = b.noAbsen ?? 999999;
-                final noCompare = aNo.compareTo(bNo);
-                if (noCompare != 0) return noCompare;
+                if (sortByAbsen) {
+                  final aNo = a.noAbsen ?? 999999;
+                  final bNo = b.noAbsen ?? 999999;
+                  final noCompare = aNo.compareTo(bNo);
+                  if (noCompare != 0) return noCompare;
+                }
                 return a.namaLengkap
                     .toLowerCase()
                     .compareTo(b.namaLengkap.toLowerCase());
@@ -199,6 +202,30 @@ class SantriSelectorField extends StatelessWidget {
                                 onChanged: (value) {
                                   setModalState(() => query = value.trim());
                                 },
+                              ),
+                              const SizedBox(height: 10),
+                              Row(
+                                children: [
+                                  const Text(
+                                    'Urut:',
+                                    style: TextStyle(
+                                      fontSize: 12,
+                                      color: AppColors.textSecondary,
+                                    ),
+                                  ),
+                                  const SizedBox(width: 8),
+                                  _SortChip(
+                                    label: 'No. Absen',
+                                    selected: sortByAbsen,
+                                    onTap: () => setModalState(() => sortByAbsen = true),
+                                  ),
+                                  const SizedBox(width: 6),
+                                  _SortChip(
+                                    label: 'Nama',
+                                    selected: !sortByAbsen,
+                                    onTap: () => setModalState(() => sortByAbsen = false),
+                                  ),
+                                ],
                               ),
                             ],
                           ),
@@ -432,6 +459,7 @@ class BasicSantriSelectorField extends StatelessWidget {
       isScrollControlled: true,
       backgroundColor: Colors.transparent,
       builder: (context) {
+        bool sortByAbsen = true;
         return StatefulBuilder(
           builder: (context, setModalState) {
             final filtered = santriList.where((santri) {
@@ -442,10 +470,12 @@ class BasicSantriSelectorField extends StatelessWidget {
                   noAbsen.contains(normalized);
             }).toList()
               ..sort((a, b) {
-                final aNo = a.noAbsen ?? 999999;
-                final bNo = b.noAbsen ?? 999999;
-                final noCompare = aNo.compareTo(bNo);
-                if (noCompare != 0) return noCompare;
+                if (sortByAbsen) {
+                  final aNo = a.noAbsen ?? 999999;
+                  final bNo = b.noAbsen ?? 999999;
+                  final noCompare = aNo.compareTo(bNo);
+                  if (noCompare != 0) return noCompare;
+                }
                 return a.namaLengkap
                     .toLowerCase()
                     .compareTo(b.namaLengkap.toLowerCase());
@@ -518,6 +548,30 @@ class BasicSantriSelectorField extends StatelessWidget {
                                 onChanged: (value) {
                                   setModalState(() => query = value.trim());
                                 },
+                              ),
+                              const SizedBox(height: 10),
+                              Row(
+                                children: [
+                                  const Text(
+                                    'Urut:',
+                                    style: TextStyle(
+                                      fontSize: 12,
+                                      color: AppColors.textSecondary,
+                                    ),
+                                  ),
+                                  const SizedBox(width: 8),
+                                  _SortChip(
+                                    label: 'No. Absen',
+                                    selected: sortByAbsen,
+                                    onTap: () => setModalState(() => sortByAbsen = true),
+                                  ),
+                                  const SizedBox(width: 6),
+                                  _SortChip(
+                                    label: 'Nama',
+                                    selected: !sortByAbsen,
+                                    onTap: () => setModalState(() => sortByAbsen = false),
+                                  ),
+                                ],
                               ),
                             ],
                           ),
@@ -629,5 +683,44 @@ class BasicSantriSelectorField extends StatelessWidget {
       santri.isSubsidi ? 'Subsidi' : 'Non Subsidi',
     ];
     return parts.join(' • ');
+  }
+}
+
+/// Tiny toggle chip used in the santri selector bottom sheet sort bar.
+class _SortChip extends StatelessWidget {
+  final String label;
+  final bool selected;
+  final VoidCallback onTap;
+
+  const _SortChip({
+    required this.label,
+    required this.selected,
+    required this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return GestureDetector(
+      onTap: onTap,
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 150),
+        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+        decoration: BoxDecoration(
+          color: selected ? AppColors.primary : Colors.transparent,
+          border: Border.all(
+            color: selected ? AppColors.primary : AppColors.border,
+          ),
+          borderRadius: BorderRadius.circular(20),
+        ),
+        child: Text(
+          label,
+          style: TextStyle(
+            fontSize: 12,
+            fontWeight: FontWeight.w600,
+            color: selected ? Colors.white : AppColors.textSecondary,
+          ),
+        ),
+      ),
+    );
   }
 }
