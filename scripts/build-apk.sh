@@ -444,7 +444,9 @@ elif [[ "$SPLIT_PER_ABI" == "true" ]]; then
   echo ""
   success "APKs ready:"
   for f in "$OUTPUT_DIR"/app-*-release.apk; do
-    [[ -f "$f" ]] && echo -e "  ${GREEN}→${RESET} $f  ($(du -sh "$f" | cut -f1))"
+    if [[ -f "$f" ]]; then
+      echo -e "  ${GREEN}→${RESET} $f  ($(du -sh "$f" | cut -f1))"
+    fi
   done
 
 else
