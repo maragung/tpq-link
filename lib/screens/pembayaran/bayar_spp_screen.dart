@@ -262,11 +262,44 @@ class _BayarSPPScreenState extends State<BayarSPPScreen> {
     return !wajib && alasan == 'Belum Terdaftar';
   }
 
+  bool _isNonaktif(dynamic _, int bulan) {
+    final status = _localBulanStatus['$bulan'];
+    if (status == null) return false;
+    final wajib = status['wajib'] == true;
+    final alasan = status['alasan'] as String?;
+    return !wajib && alasan == 'Nonaktif';
+  }
+
+  bool _canSelectWithManualNominal(int bulan) {
+    final status = _localBulanStatus['$bulan'];
+    return status?['canSelectWithManualNominal'] == true;
+  }
+
   Future<void> _bayar() async {
     if (_selectedSantriId == null || _selectedBulan.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
           content: Text('Pilih santri dan minimal 1 bulan'),
+          backgroundColor: AppColors.warning,
+        ),
+      );
+      return;
+    }
+
+    // Cek apakah ada bulan nonaktif yang dipilih
+    bool hasNonaktifMonth = false;
+    for (final bulan in _selectedBulan) {
+      if (_canSelectWithManualNominal(bulan)) {
+        hasNonaktifMonth = true;
+        break;
+      }
+    }
+
+    // Jika ada bulan nonaktif, wajib input nominal manual
+    if (hasNonaktifMonth && _manualNominal() == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Bulan nonaktif memerlukan input nominal manual'),
           backgroundColor: AppColors.warning,
         ),
       );
@@ -871,20 +904,24 @@ class _BayarSPPScreenState extends State<BayarSPPScreen> {
         bool sudahBayar = false;
         bool wajib = false;
         bool beforeRegistration = false;
+        bool isNonaktifSelectable = false;
 
         final status = _localBulanStatus['$bulan'];
         sudahBayar = status?['dibayar'] == true;
         wajib = status?['wajib'] == true;
         beforeRegistration = _isBeforeRegistration(null, bulan);
+        isNonaktifSelectable = _canSelectWithManualNominal(bulan);
 
         final isSelected = _selectedBulan.contains(bulan);
-        // Can select only if: wajib, not paid, and is the next in sequence
+        // Can select wajib only if: wajib, not paid, and is the next in sequence
         final canSelect = wajib && !sudahBayar && bulan == expectedNext;
+        // Can select nonaktif if it has canSelectWithManualNominal and admin has nominal manual access
+        final canSelectNonaktif = isNonaktifSelectable && !sudahBayar;
 
         return GestureDetector(
           onTap: sudahBayar
               ? () => _showCancelPaymentDialog(bulan)
-              : (beforeRegistration || !wajib)
+              : (beforeRegistration || (!wajib && !isNonaktifSelectable))
                   ? null
                   : () {
                       setState(() {
@@ -894,7 +931,7 @@ class _BayarSPPScreenState extends State<BayarSPPScreen> {
                               ? selectedSorted.last
                               : null;
                           if (bulan == last) _selectedBulan.remove(bulan);
-                        } else if (canSelect) {
+                        } else if (canSelect || canSelectNonaktif) {
                           _selectedBulan.add(bulan);
                         }
                       });
@@ -909,20 +946,25 @@ class _BayarSPPScreenState extends State<BayarSPPScreen> {
                       ? Colors.purple.withAlpha(26)
                       : isSelected
                           ? AppColors.primary
-                          : !wajib
+                          : !wajib && !canSelectNonaktif
                               ? Colors.grey.withAlpha(26)
-                              : canSelect
-                                  ? Colors.grey.withAlpha(51)
-                                  : Colors.grey.withAlpha(26),
+                              : isNonaktifSelectable && !canSelectNonaktif
+                                  ? Colors.orange.withAlpha(26)
+                                  : canSelect
+                                      ? Colors.grey.withAlpha(51)
+                                      : Colors.grey.withAlpha(26),
               borderRadius: BorderRadius.circular(12),
               border: isSelected && !sudahBayar
                   ? Border.all(color: AppColors.primary, width: 2)
                   : beforeRegistration
                       ? Border.all(color: Colors.purple.withAlpha(77), width: 1)
-                      : canSelect
+                      : isNonaktifSelectable && canSelectNonaktif
                           ? Border.all(
-                              color: AppColors.primary.withAlpha(102), width: 1)
-                          : null,
+                              color: Colors.orange.withAlpha(153), width: 1)
+                          : canSelect
+                              ? Border.all(
+                                  color: AppColors.primary.withAlpha(102), width: 1)
+                              : null,
             ),
             child: Column(
               children: [
@@ -935,11 +977,13 @@ class _BayarSPPScreenState extends State<BayarSPPScreen> {
                             ? Colors.purple
                             : isSelected
                                 ? Colors.white
-                                : !wajib
-                                    ? Colors.grey
-                                    : canSelect
-                                        ? AppColors.textPrimary
-                                        : Colors.grey,
+                                : isNonaktifSelectable && !canSelectNonaktif
+                                    ? Colors.orange
+                                    : !wajib
+                                        ? Colors.grey
+                                        : canSelect
+                                            ? AppColors.textPrimary
+                                            : Colors.grey,
                     fontWeight: isSelected || sudahBayar
                         ? FontWeight.bold
                         : FontWeight.normal,
@@ -953,13 +997,15 @@ class _BayarSPPScreenState extends State<BayarSPPScreen> {
                 else if (beforeRegistration)
                   const Icon(Icons.circle_outlined,
                       size: 14, color: Colors.purple)
-                else if (!wajib)
+                else if (!wajib && !isNonaktifSelectable)
                   const Icon(Icons.remove, size: 16, color: Colors.grey)
+                else if (isNonaktifSelectable && !canSelectNonaktif)
+                  const Icon(Icons.diamond_outlined, size: 16, color: Colors.orange)
                 else if (isSelected)
                   const Icon(Icons.check, size: 16, color: Colors.white)
-                else if (canSelect)
+                else if (canSelect || canSelectNonaktif)
                   Icon(Icons.radio_button_unchecked,
-                      size: 14, color: AppColors.primary.withAlpha(153))
+                      size: 14, color: isNonaktifSelectable ? Colors.orange : AppColors.primary.withAlpha(153))
                 else
                   const Icon(Icons.lock_outline, size: 14, color: Colors.grey),
               ],
