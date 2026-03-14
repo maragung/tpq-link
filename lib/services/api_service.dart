@@ -53,9 +53,12 @@ class ApiService {
   }
 
   static Map<String, String> get _headers {
+    final now = DateTime.now();
     final headers = <String, String>{
       'Content-Type': 'application/json',
       'Accept': 'application/json',
+      'x-client-tz-offset': now.timeZoneOffset.inMinutes.toString(),
+      'x-client-timezone': now.timeZoneName,
     };
     if (_token != null) {
       headers['Authorization'] = 'Bearer $_token';

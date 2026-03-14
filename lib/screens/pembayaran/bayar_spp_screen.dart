@@ -539,15 +539,8 @@ class _BayarSPPScreenState extends State<BayarSPPScreen> {
                           const SizedBox(height: 8),
                           // Badges: wajib mulai & tunggakan
                           Builder(builder: (_) {
-                            final bulanMulai = _getBulanMulai(selectedSantri);
                             final earliest = _getEarliestUnpaid(selectedSantri);
                             return Wrap(spacing: 6, runSpacing: 4, children: [
-                              if (bulanMulai != null)
-                                _infoBadge(
-                                  'Wajib bayar mulai: ${namaBulan(bulanMulai)} $_tahun',
-                                  Colors.amber.shade700,
-                                  Colors.amber.shade50,
-                                ),
                               if (earliest != null)
                                 _infoBadge(
                                   'Tunggakan dari: ${namaBulan(earliest)} $_tahun',
@@ -747,20 +740,13 @@ class _BayarSPPScreenState extends State<BayarSPPScreen> {
                           ]),
                           // Dynamic badges: wajib mulai + tunggakan
                           Builder(builder: (_) {
-                            final bulanMulai = _getBulanMulai(selectedSantri);
                             final earliest = _getEarliestUnpaid(selectedSantri);
-                            if (bulanMulai == null && earliest == null) {
+                            if (earliest == null) {
                               return const SizedBox();
                             }
                             return Padding(
                               padding: const EdgeInsets.only(top: 6, left: 18),
                               child: Wrap(spacing: 6, runSpacing: 4, children: [
-                                if (bulanMulai != null)
-                                  _infoBadge(
-                                    '📅 Wajib mulai: ${namaBulan(bulanMulai)} $_tahun',
-                                    Colors.amber.shade800,
-                                    Colors.amber.shade50,
-                                  ),
                                 if (earliest != null)
                                   _infoBadge(
                                     '⚠ Tunggakan dari: ${namaBulan(earliest)} $_tahun',
