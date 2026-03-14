@@ -50,21 +50,34 @@ class _JurnalScreenState extends State<JurnalScreen> {
                     itemBuilder: (context, index) {
                       final j = _jurnalList[index];
                       final isMasuk = j['jenis'] == 'Masuk';
+                      final isKoreksiSpp = j['is_koreksi_spp'] == true;
                       return Card(
                         margin: const EdgeInsets.only(bottom: 8),
                         child: ListTile(
                           leading: CircleAvatar(
-                            backgroundColor: isMasuk
+                            backgroundColor: isKoreksiSpp
+                                ? Colors.amber.withAlpha(51)
+                                : isMasuk
                                 ? AppColors.success.withAlpha(51)
                                 : AppColors.danger.withAlpha(51),
                             child: Icon(
-                              isMasuk ? Icons.arrow_downward : Icons.arrow_upward,
-                              color: isMasuk ? AppColors.success : AppColors.danger,
+                              isKoreksiSpp
+                                  ? Icons.autorenew
+                                  : (isMasuk
+                                      ? Icons.arrow_downward
+                                      : Icons.arrow_upward),
+                              color: isKoreksiSpp
+                                  ? Colors.amber.shade700
+                                  : (isMasuk
+                                      ? AppColors.success
+                                      : AppColors.danger),
                               size: 20,
                             ),
                           ),
                           title: Text(
-                            j['keterangan'] ?? '',
+                            isKoreksiSpp
+                                ? '${j['keterangan'] ?? ''} (Koreksi SPP)'
+                                : (j['keterangan'] ?? ''),
                             style: const TextStyle(fontWeight: FontWeight.w500, fontSize: 14),
                             maxLines: 2,
                             overflow: TextOverflow.ellipsis,
@@ -83,10 +96,12 @@ class _JurnalScreenState extends State<JurnalScreen> {
                             ],
                           ),
                           trailing: Text(
-                            '${isMasuk ? '+' : '-'} ${formatCurrency(j['nominal'] ?? 0)}',
+                            '${isKoreksiSpp ? '±' : (isMasuk ? '+' : '-')} ${formatCurrency(j['nominal'] ?? 0)}',
                             style: TextStyle(
                               fontWeight: FontWeight.bold,
-                              color: isMasuk ? AppColors.success : AppColors.danger,
+                              color: isKoreksiSpp
+                                  ? Colors.amber.shade700
+                                  : (isMasuk ? AppColors.success : AppColors.danger),
                               fontSize: 13,
                             ),
                           ),
