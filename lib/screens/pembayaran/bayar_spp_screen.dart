@@ -25,7 +25,7 @@ class _BayarSPPScreenState extends State<BayarSPPScreen> {
   final _keteranganController = TextEditingController();
   final _nominalManualController = TextEditingController();
   bool _isLoading = false;
-  bool _cancelSelectionMode = false;
+  bool _cancelSelectionMode = true;
   final Set<int> _selectedCancelPaymentIds = {};
 
   /// Map bulan -> payment record {id, kode_invoice, nominal, tgl_bayar, metode_bayar}
@@ -197,9 +197,7 @@ class _BayarSPPScreenState extends State<BayarSPPScreen> {
     setState(() => _isLoading = true);
     final prov = context.read<PembayaranProvider>();
     final ids = _selectedCancelPaymentIds.toList()..sort();
-    final result = ids.length == 1
-        ? await prov.deletePembayaran(ids.first, pin)
-        : await prov.deletePembayaranBatch(ids, pin);
+    final result = await prov.deletePembayaranBatch(ids, pin);
 
     if (!mounted) return;
     setState(() => _isLoading = false);
@@ -223,6 +221,27 @@ class _BayarSPPScreenState extends State<BayarSPPScreen> {
         _fetchLocalBulanStatus(_selectedSantriId!, _tahun);
       }
     }
+  }
+
+  List<int> _sortedPaidMonthsDesc() {
+    final months = _paidPayments.keys.where((m) => m >= 1 && m <= 12).toList();
+    months.sort((a, b) => b.compareTo(a));
+    return months;
+  }
+
+  bool _canSelectCancelMonth(int month, {required bool currentlySelected}) {
+    if (currentlySelected) return true;
+    final paidMonths = _sortedPaidMonthsDesc();
+    if (paidMonths.isEmpty) return false;
+
+    final selectedMonths = _paidPayments.entries
+        .where((e) => _selectedCancelPaymentIds.contains(e.value['id']))
+        .map((e) => e.key)
+        .toList();
+    selectedMonths.sort((a, b) => b.compareTo(a));
+
+    final nextIndex = selectedMonths.length;
+    return nextIndex < paidMonths.length && paidMonths[nextIndex] == month;
   }
 
   Widget _payDetailRow(String label, String value) {
@@ -790,40 +809,6 @@ class _BayarSPPScreenState extends State<BayarSPPScreen> {
                             style: TextStyle(
                                 fontWeight: FontWeight.bold, fontSize: 15)),
                         const Spacer(),
-                        if (_paidPayments.isNotEmpty)
-                          TextButton.icon(
-                            onPressed: _isLoading
-                                ? null
-                                : () {
-                                    setState(() {
-                                      _cancelSelectionMode =
-                                          !_cancelSelectionMode;
-                                      if (!_cancelSelectionMode) {
-                                        _selectedCancelPaymentIds.clear();
-                                      }
-                                    });
-                                  },
-                            icon: Icon(
-                              _cancelSelectionMode
-                                  ? Icons.close
-                                  : Icons.checklist_rtl,
-                              size: 16,
-                              color: _cancelSelectionMode
-                                  ? AppColors.danger
-                                  : AppColors.primary,
-                            ),
-                            label: Text(
-                              _cancelSelectionMode
-                                  ? 'Selesai'
-                                  : 'Multi pilih',
-                              style: TextStyle(
-                                color: _cancelSelectionMode
-                                    ? AppColors.danger
-                                    : AppColors.primary,
-                                fontSize: 12,
-                              ),
-                            ),
-                          ),
                         if (_fetchingPayments)
                           const SizedBox(
                               width: 16,
@@ -833,7 +818,7 @@ class _BayarSPPScreenState extends State<BayarSPPScreen> {
                     ),
                     const SizedBox(height: 4),
                     const Text(
-                      'Ketuk bulan ✓ hijau pada grid di atas untuk melihat detail dan opsi batalkan.',
+                      'Centang dari bulan terakhir yang dibayar, satu per satu.',
                       style: TextStyle(
                           fontSize: 11, color: AppColors.textSecondary),
                     ),
@@ -865,29 +850,45 @@ class _BayarSPPScreenState extends State<BayarSPPScreen> {
                                       _isLoading)
                                   ? null
                                   : _cancelSelectedPayments,
-                              child: const Text('Batalkan Terpilih'),
+                              child: const Text('Batalkan Pembayaran'),
                             ),
                           ],
                         ),
                       ),
                     ],
                     ...(_paidPayments.entries.toList()
-                          ..sort((a, b) => a.key.compareTo(b.key)))
+                          ..sort((a, b) => b.key.compareTo(a.key)))
                         .map((entry) {
                       final p = entry.value;
                       final bulan = entry.key;
                       final id = p['id'] as int?;
                       final isSelected =
                           id != null && _selectedCancelPaymentIds.contains(id);
+                      final isSelectable = _canSelectCancelMonth(
+                        bulan,
+                        currentlySelected: isSelected,
+                      );
                       return InkWell(
                         onTap: () {
                           if (_cancelSelectionMode) {
                             if (id == null) return;
                             setState(() {
                               if (isSelected) {
-                                _selectedCancelPaymentIds.remove(id);
+                                final selectedMonths = _paidPayments.entries
+                                    .where((e) => _selectedCancelPaymentIds
+                                        .contains(e.value['id']))
+                                    .map((e) => e.key)
+                                    .toList()
+                                  ..sort((a, b) => b.compareTo(a));
+                                final canUncheck = selectedMonths.isNotEmpty &&
+                                    selectedMonths.last == bulan;
+                                if (canUncheck) {
+                                  _selectedCancelPaymentIds.remove(id);
+                                }
                               } else {
-                                _selectedCancelPaymentIds.add(id);
+                                if (isSelectable) {
+                                  _selectedCancelPaymentIds.add(id);
+                                }
                               }
                             });
                             return;
@@ -917,7 +918,9 @@ class _BayarSPPScreenState extends State<BayarSPPScreen> {
                                     size: 18,
                                     color: isSelected
                                         ? AppColors.danger
-                                        : AppColors.textSecondary,
+                                        : isSelectable
+                                            ? AppColors.textSecondary
+                                            : AppColors.border,
                                   ),
                                 ),
                               const Icon(Icons.check_circle,
@@ -942,12 +945,7 @@ class _BayarSPPScreenState extends State<BayarSPPScreen> {
                                   ],
                                 ),
                               ),
-                              const Icon(Icons.cancel_outlined,
-                                  size: 16, color: AppColors.danger),
-                              const SizedBox(width: 4),
-                              const Text('Batal',
-                                  style: TextStyle(
-                                      fontSize: 11, color: AppColors.danger)),
+                                const SizedBox(width: 4),
                             ],
                           ),
                         ),
@@ -1062,8 +1060,8 @@ class _BayarSPPScreenState extends State<BayarSPPScreen> {
 
         return GestureDetector(
           onTap: sudahBayar
-              ? () => _showCancelPaymentDialog(bulan)
-              : (beforeRegistration || (!wajib && !isNonaktifSelectable))
+            ? null
+            : (beforeRegistration || (!wajib && !isNonaktifSelectable))
                   ? null
                   : () {
                       setState(() {
