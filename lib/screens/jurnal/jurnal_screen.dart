@@ -46,9 +46,19 @@ class _JurnalScreenState extends State<JurnalScreen> {
                   )
                 : ListView.builder(
                     padding: const EdgeInsets.all(16),
-                    itemCount: _jurnalList.length,
+                    itemCount: _jurnalList.length + 1,
                     itemBuilder: (context, index) {
-                      final j = _jurnalList[index];
+                      if (index == 0) {
+                        return Padding(
+                          padding: const EdgeInsets.only(bottom: 10),
+                          child: Text(
+                            'Tanggal yang ditampilkan adalah tanggal aksi transaksi.',
+                            style: const TextStyle(fontSize: 12, color: AppColors.textSecondary),
+                          ),
+                        );
+                      }
+
+                      final j = _jurnalList[index - 1];
                       final isMasuk = j['jenis'] == 'Masuk';
                       final isKoreksiSpp = j['is_koreksi_spp'] == true;
                       return Card(
@@ -86,7 +96,7 @@ class _JurnalScreenState extends State<JurnalScreen> {
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
                               Text(
-                                '${j['referensi_kode'] ?? ''} • ${formatDate(j['tgl_transaksi'])}',
+                                '${j['referensi_kode'] ?? ''} • ${formatDate(j['tanggal_aksi'] ?? j['tgl_transaksi'])}',
                                 style: const TextStyle(fontSize: 11, color: AppColors.textSecondary),
                               ),
                               Text(
