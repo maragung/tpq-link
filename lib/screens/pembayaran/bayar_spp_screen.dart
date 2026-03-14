@@ -544,13 +544,13 @@ class _BayarSPPScreenState extends State<BayarSPPScreen> {
                             return Wrap(spacing: 6, runSpacing: 4, children: [
                               if (bulanMulai != null)
                                 _infoBadge(
-                                  'Wajib bayar mulai: ${namaBulan(bulanMulai)}',
+                                  'Wajib bayar mulai: ${namaBulan(bulanMulai)} $_tahun',
                                   Colors.amber.shade700,
                                   Colors.amber.shade50,
                                 ),
                               if (earliest != null)
                                 _infoBadge(
-                                  'Tunggakan dari: ${namaBulan(earliest)}',
+                                  'Tunggakan dari: ${namaBulan(earliest)} $_tahun',
                                   Colors.red.shade700,
                                   Colors.red.shade50,
                                 )
@@ -761,13 +761,13 @@ class _BayarSPPScreenState extends State<BayarSPPScreen> {
                               child: Wrap(spacing: 6, runSpacing: 4, children: [
                                 if (bulanMulai != null)
                                   _infoBadge(
-                                    '📅 Wajib mulai: ${namaBulan(bulanMulai)}',
+                                    '📅 Wajib mulai: ${namaBulan(bulanMulai)} $_tahun',
                                     Colors.amber.shade800,
                                     Colors.amber.shade50,
                                   ),
                                 if (earliest != null)
                                   _infoBadge(
-                                    '⚠ Tunggakan dari: ${namaBulan(earliest)}',
+                                    '⚠ Tunggakan dari: ${namaBulan(earliest)} $_tahun',
                                     Colors.red.shade700,
                                     Colors.red.shade50,
                                   )
