@@ -586,13 +586,20 @@ class _BayarSPPScreenState extends State<BayarSPPScreen> {
                   const SizedBox(height: 12),
                   DropdownButtonFormField<int>(
                     initialValue: _tahun,
-                    decoration: const InputDecoration(labelText: 'Tahun'),
+                    decoration: InputDecoration(
+                      labelText: 'Tahun',
+                      helperText: _selectedSantriId != null
+                          ? 'Tahun dikunci saat santri sudah dipilih'
+                          : null,
+                    ),
                     items: List.generate(5, (i) {
                       final year = DateTime.now().year - i;
                       return DropdownMenuItem(
                           value: year, child: Text('$year'));
                     }),
-                    onChanged: (v) {
+                    onChanged: _selectedSantriId != null
+                        ? null
+                        : (v) {
                       if (v == null) return;
                       setState(() {
                         _tahun = v;
