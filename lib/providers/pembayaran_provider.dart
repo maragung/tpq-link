@@ -66,4 +66,19 @@ class PembayaranProvider extends ChangeNotifier {
     if (result['success'] == true) fetchPembayaran();
     return result;
   }
+
+  Future<Map<String, dynamic>> deletePembayaranBatch(
+      List<int> ids, String pin) async {
+    if (ids.isEmpty) {
+      return {'success': false, 'pesan': 'Pilih minimal 1 pembayaran'};
+    }
+
+    final result = await BackgroundService.enqueueOrExecute(
+      'DELETE',
+      ApiConfig.pembayaranUrl,
+      body: {'ids': ids, 'pin': pin},
+    );
+    if (result['success'] == true) fetchPembayaran();
+    return result;
+  }
 }

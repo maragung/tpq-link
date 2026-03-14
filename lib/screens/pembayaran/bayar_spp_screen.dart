@@ -25,6 +25,8 @@ class _BayarSPPScreenState extends State<BayarSPPScreen> {
   final _keteranganController = TextEditingController();
   final _nominalManualController = TextEditingController();
   bool _isLoading = false;
+  bool _cancelSelectionMode = false;
+  final Set<int> _selectedCancelPaymentIds = {};
 
   /// Map bulan -> payment record {id, kode_invoice, nominal, tgl_bayar, metode_bayar}
   Map<int, Map<String, dynamic>> _paidPayments = {};
@@ -104,9 +106,9 @@ class _BayarSPPScreenState extends State<BayarSPPScreen> {
       final map = <int, Map<String, dynamic>>{};
       for (final p in data) {
         final bulan = p['bulan_spp'];
-        if (bulan != null) {
-          map[bulan is int ? bulan : int.tryParse('$bulan') ?? 0] =
-              Map<String, dynamic>.from(p as Map);
+        final bulanInt = bulan is int ? bulan : int.tryParse('$bulan');
+        if (bulanInt != null && bulanInt >= 1 && bulanInt <= 12) {
+          map[bulanInt] = Map<String, dynamic>.from(p as Map);
         }
       }
       setState(() {
@@ -179,7 +181,47 @@ class _BayarSPPScreenState extends State<BayarSPPScreen> {
     );
     if (result['success'] == true) {
       context.read<SantriProvider>().fetchSantriStatus();
-      if (_selectedSantriId != null) _fetchPaidPayments(_selectedSantriId!);
+      if (_selectedSantriId != null) {
+        _fetchPaidPayments(_selectedSantriId!);
+        _fetchLocalBulanStatus(_selectedSantriId!, _tahun);
+      }
+    }
+  }
+
+  Future<void> _cancelSelectedPayments() async {
+    if (_selectedCancelPaymentIds.isEmpty) return;
+
+    final pin = await showPinDialog(context);
+    if (pin == null || !mounted) return;
+
+    setState(() => _isLoading = true);
+    final prov = context.read<PembayaranProvider>();
+    final ids = _selectedCancelPaymentIds.toList()..sort();
+    final result = ids.length == 1
+        ? await prov.deletePembayaran(ids.first, pin)
+        : await prov.deletePembayaranBatch(ids, pin);
+
+    if (!mounted) return;
+    setState(() => _isLoading = false);
+
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(result['pesan'] ?? 'Berhasil'),
+        backgroundColor:
+            result['success'] == true ? AppColors.success : AppColors.danger,
+      ),
+    );
+
+    if (result['success'] == true) {
+      setState(() {
+        _cancelSelectionMode = false;
+        _selectedCancelPaymentIds.clear();
+      });
+      context.read<SantriProvider>().fetchSantriStatus();
+      if (_selectedSantriId != null) {
+        _fetchPaidPayments(_selectedSantriId!);
+        _fetchLocalBulanStatus(_selectedSantriId!, _tahun);
+      }
     }
   }
 
@@ -390,6 +432,8 @@ class _BayarSPPScreenState extends State<BayarSPPScreen> {
                         _selectedSantriNama = santri.namaLengkap;
                         _selectedBulan.clear();
                         _paidPayments.clear();
+                        _cancelSelectionMode = false;
+                        _selectedCancelPaymentIds.clear();
                         _nominalManualController.clear();
                         _localBulanStatus = {};
                       });
@@ -535,6 +579,8 @@ class _BayarSPPScreenState extends State<BayarSPPScreen> {
                         _tahun = v;
                         _selectedBulan.clear();
                         _paidPayments.clear();
+                        _cancelSelectionMode = false;
+                        _selectedCancelPaymentIds.clear();
                         _nominalManualController.clear();
                         _localBulanStatus = {};
                       });
@@ -744,6 +790,40 @@ class _BayarSPPScreenState extends State<BayarSPPScreen> {
                             style: TextStyle(
                                 fontWeight: FontWeight.bold, fontSize: 15)),
                         const Spacer(),
+                        if (_paidPayments.isNotEmpty)
+                          TextButton.icon(
+                            onPressed: _isLoading
+                                ? null
+                                : () {
+                                    setState(() {
+                                      _cancelSelectionMode =
+                                          !_cancelSelectionMode;
+                                      if (!_cancelSelectionMode) {
+                                        _selectedCancelPaymentIds.clear();
+                                      }
+                                    });
+                                  },
+                            icon: Icon(
+                              _cancelSelectionMode
+                                  ? Icons.close
+                                  : Icons.checklist_rtl,
+                              size: 16,
+                              color: _cancelSelectionMode
+                                  ? AppColors.danger
+                                  : AppColors.primary,
+                            ),
+                            label: Text(
+                              _cancelSelectionMode
+                                  ? 'Selesai'
+                                  : 'Multi pilih',
+                              style: TextStyle(
+                                color: _cancelSelectionMode
+                                    ? AppColors.danger
+                                    : AppColors.primary,
+                                fontSize: 12,
+                              ),
+                            ),
+                          ),
                         if (_fetchingPayments)
                           const SizedBox(
                               width: 16,
@@ -758,13 +838,62 @@ class _BayarSPPScreenState extends State<BayarSPPScreen> {
                           fontSize: 11, color: AppColors.textSecondary),
                     ),
                     const SizedBox(height: 10),
+                    if (_cancelSelectionMode) ...[
+                      Container(
+                        margin: const EdgeInsets.only(bottom: 10),
+                        padding: const EdgeInsets.all(8),
+                        decoration: BoxDecoration(
+                          color: AppColors.danger.withAlpha(13),
+                          borderRadius: BorderRadius.circular(8),
+                          border:
+                              Border.all(color: AppColors.danger.withAlpha(77)),
+                        ),
+                        child: Row(
+                          children: [
+                            Expanded(
+                              child: Text(
+                                '${_selectedCancelPaymentIds.length} pembayaran dipilih',
+                                style: const TextStyle(
+                                  fontSize: 12,
+                                  fontWeight: FontWeight.w600,
+                                  color: AppColors.textPrimary,
+                                ),
+                              ),
+                            ),
+                            TextButton(
+                              onPressed: (_selectedCancelPaymentIds.isEmpty ||
+                                      _isLoading)
+                                  ? null
+                                  : _cancelSelectedPayments,
+                              child: const Text('Batalkan Terpilih'),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ],
                     ...(_paidPayments.entries.toList()
                           ..sort((a, b) => a.key.compareTo(b.key)))
                         .map((entry) {
                       final p = entry.value;
                       final bulan = entry.key;
+                      final id = p['id'] as int?;
+                      final isSelected =
+                          id != null && _selectedCancelPaymentIds.contains(id);
                       return InkWell(
-                        onTap: () => _showCancelPaymentDialog(bulan),
+                        onTap: () {
+                          if (_cancelSelectionMode) {
+                            if (id == null) return;
+                            setState(() {
+                              if (isSelected) {
+                                _selectedCancelPaymentIds.remove(id);
+                              } else {
+                                _selectedCancelPaymentIds.add(id);
+                              }
+                            });
+                            return;
+                          }
+                          _showCancelPaymentDialog(bulan);
+                        },
                         borderRadius: BorderRadius.circular(8),
                         child: Container(
                           margin: const EdgeInsets.only(bottom: 6),
@@ -778,6 +907,19 @@ class _BayarSPPScreenState extends State<BayarSPPScreen> {
                           ),
                           child: Row(
                             children: [
+                              if (_cancelSelectionMode)
+                                Padding(
+                                  padding: const EdgeInsets.only(right: 8),
+                                  child: Icon(
+                                    isSelected
+                                        ? Icons.check_circle
+                                        : Icons.radio_button_unchecked,
+                                    size: 18,
+                                    color: isSelected
+                                        ? AppColors.danger
+                                        : AppColors.textSecondary,
+                                  ),
+                                ),
                               const Icon(Icons.check_circle,
                                   size: 16, color: AppColors.success),
                               const SizedBox(width: 8),
