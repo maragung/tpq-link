@@ -588,18 +588,14 @@ class _BayarSPPScreenState extends State<BayarSPPScreen> {
                     initialValue: _tahun,
                     decoration: InputDecoration(
                       labelText: 'Tahun',
-                      helperText: _selectedSantriId != null
-                          ? 'Tahun dikunci saat santri sudah dipilih'
-                          : null,
+                      helperText: 'Pilihan tahun dipertahankan selama halaman ini aktif',
                     ),
                     items: List.generate(5, (i) {
                       final year = DateTime.now().year - i;
                       return DropdownMenuItem(
                           value: year, child: Text('$year'));
                     }),
-                    onChanged: _selectedSantriId != null
-                        ? null
-                        : (v) {
+                    onChanged: (v) {
                       if (v == null) return;
                       setState(() {
                         _tahun = v;
