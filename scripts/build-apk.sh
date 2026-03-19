@@ -1,5 +1,5 @@
 #!/bin/bash
-# scripts/build-apk.sh — Final fixed version for WSL + Windows-SDK Interoperability
+# scripts/build-apk.sh — Reliable build script for WSL + Windows-SDK Interoperability
 set -euo pipefail
 
 # Normalize path helper (CRLF strip + Windows-to-WSL conversion if needed)
@@ -83,26 +83,67 @@ if [[ -f "$LOCAL_PROPERTIES_PATH" ]] && $IS_WSL; then
   fi
 fi
 
-# Final Cleanup (Incremental by default)
 cd "$PROJECT_ROOT"
+
+# Pre-build cleanup - always clean gradle cache to avoid stale artifacts
+log "Preparing build environment..."
+
+# Stop all gradle daemons to ensure fresh build
+if command -v gradle >/dev/null 2>&1; then
+  gradle --stop 2>/dev/null || true
+fi
+
+# Clean flutter build artifacts if --clean is specified or if this is a fresh start
 if [[ "$CLEAN_BUILD" == "true" ]]; then
   log "Full clean (--clean)..."
   run_flutter clean
-  rm -rf .gradle android/.gradle 2>/dev/null || true
+  rm -rf .gradle android/.gradle build android/.kotlin android/app/build 2>/dev/null || true
   success "Build cache cleared."
 else
-  log "Using incremental build (fast)."
+  # Always clean android build directory and gradle cache for release builds to avoid incremental issues
+  log "Cleaning previous build artifacts..."
+  rm -rf android/app/build 2>/dev/null || true
+  rm -rf android/.gradle 2>/dev/null || true
+  rm -rf android/.kotlin 2>/dev/null || true
+  rm -rf build/app/intermediates 2>/dev/null || true
+  # Stop gradle daemons to clear incremental compilation cache
+  if [[ -f android/gradlew ]]; then
+    chmod +x android/gradlew
+    ./android/gradlew --stop 2>/dev/null || true
+  fi
 fi
+
+# Get dependencies
+log "Getting Flutter dependencies..."
+run_flutter pub get
+
+# Ensure build is up to date
+log "Running Flutter build..."
 
 # Build
 log "Starting build..."
 if [[ "$BUILD_AAB" == "true" ]]; then
-  run_flutter build appbundle --release
+  run_flutter build appbundle --release --android-skip-build-dependency-validation
 elif [[ "$SPLIT_PER_ABI" == "true" ]]; then
-  run_flutter build apk --release --split-per-abi
+  run_flutter build apk --release --split-per-abi --android-skip-build-dependency-validation
 else
-  run_flutter build apk --release
+  run_flutter build apk --release --android-skip-build-dependency-validation
 fi
 
 success "Done!"
+
+# Show output location
+if [[ "$BUILD_AAB" == "true" ]]; then
+  echo ""
+  log "Output: build/app/outputs/bundle/release/app-release.aab"
+else
+  echo ""
+  if [[ "$SPLIT_PER_ABI" == "true" ]]; then
+    log "Output files:"
+    ls -lh build/app/outputs/flutter-apk/*.apk 2>/dev/null || true
+  else
+    log "Output: build/app/outputs/flutter-apk/release/app-release.apk"
+  fi
+fi
+
 exit 0

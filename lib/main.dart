@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
-import 'package:uni_links/uni_links.dart';
+import 'package:app_links/app_links.dart';
 import 'dart:async';
 import 'dart:ui';
 
@@ -67,7 +67,8 @@ class TPQApp extends StatefulWidget {
 }
 
 class _TPQAppState extends State<TPQApp> {
-  StreamSubscription? _linkSub;
+  late final AppLinks _appLinks;
+  StreamSubscription<Uri?>? _linkSub;
 
   @override
   void initState() {
@@ -76,17 +77,14 @@ class _TPQAppState extends State<TPQApp> {
   }
 
   Future<void> _initDeepLinks() async {
-    // Handle initial deep link (app was closed)
-    try {
-      final initialLink = await getInitialLink();
-      if (initialLink != null) {
-        _handleDeepLink(initialLink);
-      }
-    } catch (_) {}
+    _appLinks = AppLinks();
 
-    // Handle deep links while app is running
-    _linkSub = linkStream.listen((String? link) {
-      if (link != null) _handleDeepLink(link);
+    // Handle deep links (both initial and while app is running)
+    // uriLinkStream emits the initial link first (if available), then new links
+    _linkSub = _appLinks.uriLinkStream.listen((Uri? uri) {
+      if (uri != null) {
+        _handleDeepLink(uri.toString());
+      }
     });
   }
 
@@ -209,12 +207,12 @@ class _TPQAppState extends State<TPQApp> {
                 foregroundColor: Colors.white,
                 elevation: 0,
               ),
-              cardTheme: CardTheme(
-                color: const Color(0xFF1F2937),
+              cardTheme: const CardThemeData(
+                color: Color(0xFF1F2937),
                 elevation: 0,
                 shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(20),
-                  side: const BorderSide(color: Color(0xFF374151)),
+                  borderRadius: BorderRadius.all(Radius.circular(20)),
+                  side: BorderSide(color: Color(0xFF374151)),
                 ),
               ),
               inputDecorationTheme: InputDecorationTheme(

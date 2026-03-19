@@ -1,5 +1,7 @@
+import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../providers/auth_provider.dart' as import_auth;
+import '../../providers/theme_provider.dart';
 import '../../services/api_service.dart';
 import '../../utils/constants.dart';
 
@@ -100,7 +102,7 @@ class _PengaturanScreenState extends State<PengaturanScreen> {
                     );
                   }),
                   const SizedBox(height: 16),
-                  Consumer<import_auth.ThemeProvider>(
+                  Consumer<ThemeProvider>(
                     builder: (context, theme, _) => Card(
                       child: SwitchListTile(
                         title: const Text('Mode Gelap', style: TextStyle(fontWeight: FontWeight.bold)),

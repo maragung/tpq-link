@@ -522,59 +522,59 @@ class _DashboardChart extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final isDark = Theme.of(context).brightness == Brightness.dark;
-    
     return AspectRatio(
       aspectRatio: 1.7,
       child: Card(
-        padding: const EdgeInsets.all(16),
-        child: BarChart(
-          BarChartData(
-            alignment: BarChartAlignment.spaceAround,
-            maxY: (pemasukan > pengeluaran ? pemasukan : pengeluaran) * 1.2,
-            barTouchData: BarTouchData(enabled: true),
-            titlesData: FlTitlesData(
-              show: true,
-              bottomTitles: AxisTitles(
-                sideTitles: SideTitles(
-                  showTitles: true,
-                  getTitlesWidget: (value, meta) {
-                    if (value == 0) return const Text('Masuk', style: TextStyle(fontSize: 10));
-                    if (value == 1) return const Text('Keluar', style: TextStyle(fontSize: 10));
-                    return const SizedBox();
-                  },
+        child: Padding(
+          padding: const EdgeInsets.all(16),
+          child: BarChart(
+            BarChartData(
+              alignment: BarChartAlignment.spaceAround,
+              maxY: (pemasukan > pengeluaran ? pemasukan : pengeluaran) * 1.2,
+              barTouchData: BarTouchData(enabled: true),
+              titlesData: FlTitlesData(
+                show: true,
+                bottomTitles: AxisTitles(
+                  sideTitles: SideTitles(
+                    showTitles: true,
+                    getTitlesWidget: (value, meta) {
+                      if (value == 0) return const Text('Masuk', style: TextStyle(fontSize: 10));
+                      if (value == 1) return const Text('Keluar', style: TextStyle(fontSize: 10));
+                      return const SizedBox();
+                    },
+                  ),
                 ),
+                leftTitles: const AxisTitles(sideTitles: SideTitles(showTitles: false)),
+                topTitles: const AxisTitles(sideTitles: SideTitles(showTitles: false)),
+                rightTitles: const AxisTitles(sideTitles: SideTitles(showTitles: false)),
               ),
-              leftTitles: const AxisTitles(sideTitles: SideTitles(showTitles: false)),
-              topTitles: const AxisTitles(sideTitles: SideTitles(showTitles: false)),
-              rightTitles: const AxisTitles(sideTitles: SideTitles(showTitles: false)),
+              gridData: const FlGridData(show: false),
+              borderData: FlBorderData(show: false),
+              barGroups: [
+                BarChartGroupData(
+                  x: 0,
+                  barRods: [
+                    BarChartRodData(
+                      toY: pemasukan,
+                      color: AppColors.success,
+                      width: 40,
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                  ],
+                ),
+                BarChartGroupData(
+                  x: 1,
+                  barRods: [
+                    BarChartRodData(
+                      toY: pengeluaran,
+                      color: AppColors.danger,
+                      width: 40,
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                  ],
+                ),
+              ],
             ),
-            gridData: const FlGridData(show: false),
-            borderData: FlBorderData(show: false),
-            barGroups: [
-              BarChartGroupData(
-                x: 0,
-                barRods: [
-                  BarChartRodData(
-                    toY: pemasukan,
-                    color: AppColors.success,
-                    width: 40,
-                    borderRadius: BorderRadius.circular(8),
-                  ),
-                ],
-              ),
-              BarChartGroupData(
-                x: 1,
-                barRods: [
-                  BarChartRodData(
-                    toY: pengeluaran,
-                    color: AppColors.danger,
-                    width: 40,
-                    borderRadius: BorderRadius.circular(8),
-                  ),
-                ],
-              ),
-            ],
           ),
         ),
       ),

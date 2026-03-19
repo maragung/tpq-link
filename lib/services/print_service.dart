@@ -33,13 +33,13 @@ class PrintService {
                 ),
               ),
               pw.SizedBox(height: 10),
-              _item(pw, 'Tanggal', tanggal),
-              _item(pw, 'Nama', namaSantri),
-              _item(pw, 'NIK', nik),
-              _item(pw, 'Bulan', bulan),
+              _item('Tanggal', tanggal),
+              _item('Nama', namaSantri),
+              _item('NIK', nik),
+              _item('Bulan', bulan),
               pw.Divider(),
               pw.Row(
-                mainAxisAlignment: pw.MainRowAxisAlignment.spaceBetween,
+                mainAxisAlignment: pw.MainAxisAlignment.spaceBetween,
                 children: [
                   pw.Text('TOTAL', style: pw.TextStyle(fontWeight: pw.FontWeight.bold)),
                   pw.Text(formatCurrency(nominal), style: pw.TextStyle(fontWeight: pw.FontWeight.bold)),
@@ -50,7 +50,7 @@ class PrintService {
               pw.Text('Status: LUNAS', style: pw.TextStyle(fontWeight: pw.FontWeight.bold, color: PdfColors.green)),
               pw.SizedBox(height: 20),
               pw.Row(
-                mainAxisAlignment: pw.MainRowAxisAlignment.spaceBetween,
+                mainAxisAlignment: pw.MainAxisAlignment.spaceBetween,
                 children: [
                   pw.Column(
                     crossAxisAlignment: pw.CrossAxisAlignment.start,
@@ -84,7 +84,7 @@ class PrintService {
     );
   }
 
-  static pw.Widget _item(dynamic pw, String label, String value) {
+  static pw.Widget _item(String label, String value) {
     return pw.Padding(
       padding: const pw.EdgeInsets.symmetric(vertical: 2),
       child: pw.Row(

@@ -1,0 +1,22 @@
+Running Gradle task 'assembleRelease'...                        
+Font asset "MaterialIcons-Regular.otf" was tree-shaken, reducing it from 1645184 to 15256 bytes (99.1% reduction). Tree-shaking can be disabled by providing the --no-tree-shake-icons flag when building your app.
+C:\Users\hpnos\AppData\Local\Pub\Cache\hosted\pub.dev\uni_links-0.5.1\android\src\main\java\name\avioli\unilinks\UniLinksPlugin.java:84: error: cannot find symbol
+    public static void registerWith(@NonNull PluginRegistry.Registrar registrar) {
+                                                           ^
+  symbol:   class Registrar
+  location: interface PluginRegistry
+1 error
+
+FAILURE: Build failed with an exception.
+
+* What went wrong:
+Execution failed for task ':uni_links:compileReleaseJavaWithJavac'.
+> Compilation failed; see the compiler error output for details.
+
+* Try:
+> Run with --info option to get more log output.
+> Run with --scan to get full insights.
+
+BUILD FAILED in 39s
+Running Gradle task 'assembleRelease'...                           40.4s
+Gradle task assembleRelease failed with exit code 1
