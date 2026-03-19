@@ -34,6 +34,22 @@ success(){ echo -e "${GREEN}[OK]${RESET}   $*"; }
 warn()   { echo -e "${YELLOW}[WARN]${RESET} $*"; }
 error()  { echo -e "${RED}[ERROR]${RESET} $*" >&2; exit 1; }
 
+# ── Helpers ──────────────────────────────────────────────────────────────────
+normalize_path() {
+  local path="$1"
+  [[ -z "$path" ]] && return 0
+  path=$(echo "$path" | tr -d '\r')
+  if [[ "$path" =~ ^[A-Za-z]:\\ || "$path" == *"\\"* ]] && grep -qi microsoft /proc/version 2>/dev/null; then
+    if command -v wslpath >/dev/null 2>&1; then
+      wslpath -u "$path"
+    else
+      echo "$path" | sed -E 's/([A-Za-z]):\\/\/\L\1\//;s/\\/\//g'
+    fi
+  else
+    echo "$path"
+  fi
+}
+
 bump_project_version() {
   local version_line current_version current_name current_code
   local major minor patch next_patch next_code next_version
@@ -154,9 +170,9 @@ if [[ "$SKIP_KEYGEN" == "false" ]]; then
 else
   # Read existing alias/passwords to use as defaults, but still prompt the user.
   if [[ -f "$KEY_PROPS_PATH" ]]; then
-    EXISTING_KEY_ALIAS=$(grep -E '^keyAlias' "$KEY_PROPS_PATH" | cut -d= -f2- | sed 's/^[[:space:]]*//')
-    EXISTING_KEY_PASSWORD=$(grep -E '^keyPassword' "$KEY_PROPS_PATH" | cut -d= -f2- | sed 's/^[[:space:]]*//')
-    EXISTING_STORE_PASSWORD=$(grep -E '^storePassword' "$KEY_PROPS_PATH" | cut -d= -f2- | sed 's/^[[:space:]]*//')
+    EXISTING_KEY_ALIAS=$(grep -E '^keyAlias' "$KEY_PROPS_PATH" | cut -d= -f2- | sed 's/^[[:space:]]*//' | tr -d '\r')
+    EXISTING_KEY_PASSWORD=$(grep -E '^keyPassword' "$KEY_PROPS_PATH" | cut -d= -f2- | sed 's/^[[:space:]]*//' | tr -d '\r')
+    EXISTING_STORE_PASSWORD=$(grep -E '^storePassword' "$KEY_PROPS_PATH" | cut -d= -f2- | sed 's/^[[:space:]]*//' | tr -d '\r')
   else
     EXISTING_KEY_ALIAS="tpq-release"
     EXISTING_KEY_PASSWORD=""
