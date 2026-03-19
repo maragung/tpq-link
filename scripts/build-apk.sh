@@ -1,8 +1,8 @@
 #!/bin/bash
-# scripts/build-apk.sh
+# scripts/build-apk.sh — Final fixed version for WSL + Windows-SDK Interoperability
 set -euo pipefail
 
-# Normalize path helper
+# Normalize path helper (CRLF strip + Windows-to-WSL conversion if needed)
 normalize_path() {
   local path="$1"
   [[ -z "$path" ]] && return 0
@@ -20,59 +20,89 @@ normalize_path() {
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")"; pwd -P)"
 PROJECT_ROOT="$(cd "$SCRIPT_DIR/.."; pwd -P)"
+PUBSPEC_PATH="$PROJECT_ROOT/pubspec.yaml"
+LOCAL_PROPERTIES_PATH="$PROJECT_ROOT/android/local.properties"
 
-log()    { echo -e "[BUILD] $*"; }
-success(){ echo -e "[OK]    $*"; }
-warn()   { echo -e "[WARN]  $*"; }
-error()  { echo -e "[ERROR] $*" >&2; exit 1; }
+# Colors
+RED='\033[0;31m'; GREEN='\033[0;32m'; YELLOW='\033[1;33m'; CYAN='\033[0;36m'; BOLD='\033[1m'; RESET='\033[0m'
+
+log()    { echo -e "${CYAN}[BUILD]${RESET} $*"; }
+success(){ echo -e "${GREEN}[OK]${RESET}   $*"; }
+warn()   { echo -e "${YELLOW}[WARN]${RESET} $*"; }
+error()  { echo -e "${RED}[ERROR]${RESET} $*" >&2; exit 1; }
 
 echo "══════════════════════════════════════════════════════"
-echo "  TPQ Link — Build Release APK"
+echo "  TPQ Link — Build Release APK (WSL Enhanced)         "
 echo "══════════════════════════════════════════════════════"
 
-# Skip long parts for brief check
-SPLIT_PER_ABI=false
-BUILD_AAB=false
+# Parse arguments
+SPLIT_PER_ABI=false; BUILD_AAB=false; CLEAN_BUILD=false
 for arg in "$@"; do
   case "$arg" in
     --split-per-abi|--split-abi) SPLIT_PER_ABI=true ;;
     --aab)           BUILD_AAB=true ;;
+    --clean)         CLEAN_BUILD=true ;;
+    *) warn "Unknown argument: $arg" ;;
   esac
 done
 
-if ! command -v flutter &>/dev/null; then
-  for _cand in "$HOME/flutter/bin" "/opt/flutter/bin" "/usr/local/flutter/bin" "/mnt/c/Apps/flutter/bin"; do
-    if [[ -x "$_cand/flutter" ]]; then
-       export PATH="$_cand:$PATH"
-       break
-    fi
-  done
-fi
+# Detect environment
+IS_WSL=false; if grep -qi microsoft /proc/version 2>/dev/null; then IS_WSL=true; fi
 
-command -v flutter &>/dev/null || error "Flutter not found. Run scripts/install.sh"
-log "Flutter: $(flutter --version | head -1)"
+# Function to run flutter (detects if we need cmd.exe in WSL for Windows-SDK)
+run_flutter() {
+  if ! $IS_WSL; then
+     flutter "$@"
+  else
+     # In WSL, check if 'flutter' (linux) is available and has local shebang
+     if command -v flutter >/dev/null 2>&1 && ! (head -n 1 $(command -v flutter) | grep -q $'\r'); then
+        flutter "$@"
+     else
+        # Use cmd.exe to call Windows' flutter.bat
+        local win_root=$(wslpath -w "$PROJECT_ROOT" | tr -d '\r')
+        # Use cmd.exe /c "command" with properly escaped paths
+        cmd.exe /c "cd /d $win_root && flutter $*"
+     fi
+  fi
+}
 
-# Check SDK
-if [[ -f "$PROJECT_ROOT/android/local.properties" ]]; then
-  raw_sdk=$(grep '^sdk.dir=' "$PROJECT_ROOT/android/local.properties" | cut -d= -f2-)
+# Version checking
+log "Checking environment..."
+run_flutter --version | head -1
+
+# Fix local.properties SDK path if in WSL
+if [[ -f "$LOCAL_PROPERTIES_PATH" ]] && $IS_WSL; then
+  raw_sdk=$(grep '^sdk.dir=' "$LOCAL_PROPERTIES_PATH" | cut -d= -f2-)
   SDK_DIR=$(normalize_path "$raw_sdk")
   if [[ -d "$SDK_DIR" ]]; then
-     export ANDROID_HOME="$SDK_DIR"
-     export ANDROID_SDK_ROOT="$SDK_DIR"
+     export ANDROID_HOME="$SDK_DIR"; export ANDROID_SDK_ROOT="$SDK_DIR"
      export PATH="$SDK_DIR/platform-tools:$PATH"
+     # Sync back to local.properties as WSL path for Gradle
+     sed -i "s|^sdk\.dir=.*$|sdk.dir=$SDK_DIR|" "$LOCAL_PROPERTIES_PATH"
      log "Using SDK: $SDK_DIR"
   fi
 fi
 
+# Final Cleanup (Incremental by default)
 cd "$PROJECT_ROOT"
-log "Building..."
-if [[ "$BUILD_AAB" == "true" ]]; then
-  flutter build appbundle --release
-elif [[ "$SPLIT_PER_ABI" == "true" ]]; then
-  flutter build apk --release --split-per-abi
+if [[ "$CLEAN_BUILD" == "true" ]]; then
+  log "Full clean (--clean)..."
+  run_flutter clean
+  rm -rf .gradle android/.gradle 2>/dev/null || true
+  success "Build cache cleared."
 else
-  flutter build apk --release
+  log "Using incremental build (fast)."
 fi
 
-success "Build complete."
+# Build
+log "Starting build..."
+if [[ "$BUILD_AAB" == "true" ]]; then
+  run_flutter build appbundle --release
+elif [[ "$SPLIT_PER_ABI" == "true" ]]; then
+  run_flutter build apk --release --split-per-abi
+else
+  run_flutter build apk --release
+fi
+
+success "Done!"
 exit 0
