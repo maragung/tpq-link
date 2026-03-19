@@ -247,6 +247,15 @@ class _LoginScreenState extends State<LoginScreen> {
                   ),
                 ],
                 const SizedBox(height: 32),
+                TextButton.icon(
+                  onPressed: () => Navigator.pushNamed(context, '/cek-pembayaran'),
+                  icon: const Icon(Icons.search_rounded),
+                  label: const Text('Cek Status Pembayaran Santri'),
+                  style: TextButton.styleFrom(
+                    foregroundColor: AppColors.primary,
+                  ),
+                ),
+                const SizedBox(height: 8),
                 Text(
                   'Scan QR Code dari halaman admin web\natau masuk via deep link tpqlink://',
                   textAlign: TextAlign.center,

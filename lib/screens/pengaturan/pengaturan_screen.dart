@@ -1,4 +1,5 @@
-import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
+import '../../providers/auth_provider.dart' as import_auth;
 import '../../services/api_service.dart';
 import '../../utils/constants.dart';
 
@@ -79,6 +80,41 @@ class _PengaturanScreenState extends State<PengaturanScreen> {
                     'nominal_spp_subsidi',
                   ),
                   const SizedBox(height: 16),
+                  FutureBuilder<String?>(
+                    future: ApiService.getToken(),
+                    builder: (context, snapshot) {
+                      // We need user role, but PengaturanScreen doesn't watch AuthProvider.
+                      // Let's use a dynamic approach or just check if the endpoint exists.
+                      return Container(); // Placeholder or check via context
+                    },
+                  ),
+                  // Using Provider directly is better
+                  Builder(builder: (context) {
+                    final isDev = Provider.of<import_auth.AuthProvider>(context, listen: false).user?.isDeveloper == true;
+                    if (!isDev) return const SizedBox();
+                    return _buildActionCard(
+                      'Konfigurasi Email',
+                      'Kelola server SMTP dan log pengiriman email',
+                      Icons.email_outlined,
+                      () => Navigator.pushNamed(context, '/email-config'),
+                    );
+                  }),
+                  const SizedBox(height: 16),
+                  Consumer<import_auth.ThemeProvider>(
+                    builder: (context, theme, _) => Card(
+                      child: SwitchListTile(
+                        title: const Text('Mode Gelap', style: TextStyle(fontWeight: FontWeight.bold)),
+                        subtitle: const Text('Gunakan tema gelap untuk aplikasi'),
+                        secondary: CircleAvatar(
+                          backgroundColor: AppColors.primary.withAlpha(26),
+                          child: Icon(theme.isDarkMode ? Icons.dark_mode : Icons.light_mode, color: AppColors.primary),
+                        ),
+                        value: theme.isDarkMode,
+                        onChanged: (val) => theme.toggleTheme(),
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: 16),
                   const Card(
                     child: Padding(
                       padding: EdgeInsets.all(16),
@@ -105,6 +141,21 @@ class _PengaturanScreenState extends State<PengaturanScreen> {
               ),
             ),
         ),
+    );
+  }
+
+  Widget _buildActionCard(String title, String subtitle, IconData icon, VoidCallback onTap) {
+    return Card(
+      child: ListTile(
+        leading: CircleAvatar(
+          backgroundColor: AppColors.secondary.withAlpha(26),
+          child: Icon(icon, color: AppColors.secondary),
+        ),
+        title: Text(title, style: const TextStyle(fontWeight: FontWeight.bold)),
+        subtitle: Text(subtitle, style: const TextStyle(fontSize: 12)),
+        trailing: const Icon(Icons.chevron_right),
+        onTap: onTap,
+      ),
     );
   }
 

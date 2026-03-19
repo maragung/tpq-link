@@ -3,6 +3,8 @@ import 'package:provider/provider.dart';
 import '../../providers/santri_provider.dart';
 import '../../providers/pembayaran_provider.dart';
 import '../../services/api_service.dart';
+import '../../services/print_service.dart';
+import '../../providers/auth_provider.dart';
 import '../../utils/constants.dart';
 import '../../utils/helpers.dart';
 import '../../widgets/pin_dialog.dart';
@@ -934,7 +936,22 @@ class _BayarSPPScreenState extends State<BayarSPPScreen> {
                                   ],
                                 ),
                               ),
-                                const SizedBox(width: 4),
+                              const SizedBox(width: 4),
+                              if (!_cancelSelectionMode)
+                                IconButton(
+                                  icon: const Icon(Icons.print, size: 18, color: AppColors.primary),
+                                  onPressed: () {
+                                    final auth = context.read<AuthProvider>();
+                                    PrintService.printReceipt(
+                                      namaSantri: _selectedSantriNama ?? '-',
+                                      nik: selectedSantri?.nik ?? '-',
+                                      tanggal: _formatDate(p['tgl_bayar']?.toString() ?? ''),
+                                      nominal: p['nominal'] ?? 0,
+                                      bulan: namaBulan(bulan),
+                                      admin: auth.user?.namaLengkap ?? 'Admin',
+                                    );
+                                  },
+                                ),
                             ],
                           ),
                         ),

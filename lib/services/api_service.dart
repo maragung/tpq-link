@@ -155,26 +155,54 @@ class ApiService {
   }
 
   static Map<String, dynamic> _handleResponse(http.Response response) {
+    final int code = response.statusCode;
+
     // 401 → token expired or invalid → notify listeners to force re-login
-    if (response.statusCode == 401) {
+    if (code == 401) {
       _unauthorizedController.add(null);
       return {
         'success': false,
         'statusCode': 401,
-        'pesan': 'Sesi habis, silakan login ulang',
+        'pesan': 'Sesi habis atau tidak valid, silakan login ulang',
+      };
+    }
+
+    if (code == 403) {
+      return {
+        'success': false,
+        'statusCode': 403,
+        'pesan': 'Anda tidak memiliki akses untuk melakukan tindakan ini',
+      };
+    }
+
+    if (code == 404) {
+      return {
+        'success': false,
+        'statusCode': 404,
+        'pesan': 'Data atau layanan tidak ditemukan (404)',
+      };
+    }
+
+    if (code >= 500) {
+      return {
+        'success': false,
+        'statusCode': code,
+        'pesan': 'Terjadi kesalahan pada server ($code). Silakan coba lagi nanti.',
       };
     }
 
     try {
       final data = jsonDecode(response.body) as Map<String, dynamic>;
-      // Always include statusCode so callers (e.g. background queue) can
-      // distinguish permanent (4xx) from transient (5xx / network) failures.
-      return {'statusCode': response.statusCode, ...data};
+      // If the API returns success: false but no message, provide a default
+      if (data['success'] == false && data['pesan'] == null && data['message'] == null) {
+        data['pesan'] = 'Terjadi kesalahan internal (Status: $code)';
+      }
+      return {'statusCode': code, ...data};
     } catch (_) {
       return {
         'success': false,
-        'statusCode': response.statusCode,
-        'pesan': 'Respon server tidak valid (${response.statusCode})',
+        'statusCode': code,
+        'pesan': 'Respon server tidak dapat diproses ($code)',
       };
     }
   }

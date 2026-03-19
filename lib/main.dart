@@ -5,6 +5,7 @@ import 'package:uni_links/uni_links.dart';
 import 'dart:async';
 import 'dart:ui';
 
+import 'providers/theme_provider.dart';
 import 'providers/auth_provider.dart';
 import 'providers/santri_provider.dart';
 import 'providers/pembayaran_provider.dart';
@@ -30,8 +31,14 @@ import 'screens/laporan/laporan_screen.dart';
 import 'screens/pembayaran/pembayaran_lain_screen.dart';
 import 'screens/prestasi/prestasi_santri_screen.dart';
 import 'screens/akun/akun_screen.dart';
+import 'screens/admin/admin_list_screen.dart';
+import 'screens/admin/admin_form_screen.dart';
+import 'screens/admin/audit_log_screen.dart';
+import 'screens/pengaturan/email_config_screen.dart';
+import 'screens/auth/cek_pembayaran_screen.dart';
 import 'services/background_service.dart';
 import 'utils/constants.dart';
+import 'utils/helpers.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -116,6 +123,7 @@ class _TPQAppState extends State<TPQApp> {
   Widget build(BuildContext context) {
     return MultiProvider(
       providers: [
+        ChangeNotifierProvider(create: (_) => ThemeProvider()),
         ChangeNotifierProvider(create: (_) => AuthProvider()),
         ChangeNotifierProxyProvider<AuthProvider, DashboardProvider>(
           create: (_) => DashboardProvider(),
@@ -131,12 +139,13 @@ class _TPQAppState extends State<TPQApp> {
         ),
         ChangeNotifierProvider(create: (_) => AbsensiProvider()),
       ],
-      child: Consumer<AuthProvider>(
-        builder: (context, auth, _) {
+      child: Consumer2<AuthProvider, ThemeProvider>(
+        builder: (context, auth, theme, _) {
           return MaterialApp(
             title: 'TPQ Futuhil Hidayah',
             navigatorKey: _navigatorKey,
             debugShowCheckedModeBanner: false,
+            themeMode: theme.themeMode,
             theme: ThemeData(
               scaffoldBackgroundColor: AppColors.background,
               colorScheme: ColorScheme.fromSeed(
@@ -169,25 +178,9 @@ class _TPQAppState extends State<TPQApp> {
                   elevation: 0,
                 ),
               ),
-              outlinedButtonTheme: OutlinedButtonThemeData(
-                style: OutlinedButton.styleFrom(
-                  foregroundColor: AppColors.primary,
-                  side: const BorderSide(color: AppColors.border),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(16),
-                  ),
-                  padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 14),
-                ),
-              ),
-              floatingActionButtonTheme: const FloatingActionButtonThemeData(
-                backgroundColor: AppColors.primary,
-                foregroundColor: Colors.white,
-              ),
               inputDecorationTheme: InputDecorationTheme(
                 filled: true,
                 fillColor: Colors.white,
-                labelStyle: const TextStyle(color: AppColors.textSecondary),
-                hintStyle: const TextStyle(color: AppColors.textSecondary),
                 border: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(16),
                   borderSide: const BorderSide(color: AppColors.border),
@@ -200,63 +193,37 @@ class _TPQAppState extends State<TPQApp> {
                   borderRadius: BorderRadius.circular(16),
                   borderSide: const BorderSide(color: AppColors.primary, width: 1.4),
                 ),
-                contentPadding:
-                    const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
               ),
-              cardTheme: CardThemeData(
-                color: Colors.white,
+            ),
+            darkTheme: ThemeData(
+              brightness: Brightness.dark,
+              scaffoldBackgroundColor: const Color(0xFF111827),
+              colorScheme: ColorScheme.fromSeed(
+                seedColor: AppColors.primary,
+                brightness: Brightness.dark,
+              ),
+              useMaterial3: true,
+              fontFamily: 'Roboto',
+              appBarTheme: const AppBarTheme(
+                backgroundColor: Color(0xFF1F2937),
+                foregroundColor: Colors.white,
                 elevation: 0,
-                shadowColor: Colors.black.withAlpha(12),
+              ),
+              cardTheme: CardTheme(
+                color: const Color(0xFF1F2937),
+                elevation: 0,
                 shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(20),
-                  side: const BorderSide(color: AppColors.border),
+                  side: const BorderSide(color: Color(0xFF374151)),
                 ),
               ),
-              snackBarTheme: SnackBarThemeData(
-                behavior: SnackBarBehavior.floating,
-                backgroundColor: AppColors.textPrimary,
-                contentTextStyle: const TextStyle(color: Colors.white),
-                shape: RoundedRectangleBorder(
+              inputDecorationTheme: InputDecorationTheme(
+                filled: true,
+                fillColor: const Color(0xFF374151),
+                border: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(16),
+                  borderSide: const BorderSide(color: Color(0xFF4B5563)),
                 ),
-              ),
-              chipTheme: ChipThemeData(
-                backgroundColor: Colors.white,
-                selectedColor: AppColors.primary.withAlpha(40),
-                disabledColor: AppColors.border,
-                side: const BorderSide(color: AppColors.border),
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(14),
-                ),
-                labelStyle: const TextStyle(color: AppColors.textPrimary),
-                secondaryLabelStyle: const TextStyle(color: AppColors.primary),
-                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
-              ),
-              listTileTheme: const ListTileThemeData(
-                contentPadding: EdgeInsets.symmetric(horizontal: 16, vertical: 4),
-                iconColor: AppColors.primary,
-              ),
-              dividerTheme: const DividerThemeData(
-                color: AppColors.border,
-                thickness: 1,
-                space: 1,
-              ),
-              navigationBarTheme: NavigationBarThemeData(
-                height: 72,
-                backgroundColor: Colors.white,
-                shadowColor: Colors.black.withAlpha(10),
-                indicatorColor: AppColors.primary.withAlpha(36),
-                labelTextStyle: WidgetStateProperty.resolveWith((states) {
-                  return TextStyle(
-                    fontSize: 11,
-                    fontWeight: states.contains(WidgetState.selected)
-                        ? FontWeight.w700
-                        : FontWeight.w500,
-                    color: states.contains(WidgetState.selected)
-                        ? AppColors.primary
-                        : AppColors.textSecondary,
-                  );
-                }),
               ),
             ),
             home: auth.isAuthenticated
@@ -286,6 +253,12 @@ class _TPQAppState extends State<TPQApp> {
               '/keuangan': (_) => const KeuanganScreen(),
               '/laporan': (_) => const LaporanScreen(),
               '/pembayaran-lain': (_) => const PembayaranLainScreen(),
+              // New management routes
+              '/admin-kelola': (_) => const AdminListScreen(),
+              '/admin-form': (_) => const AdminFormScreen(),
+              '/email-config': (_) => const EmailConfigScreen(),
+              '/audit-log': (_) => const AuditLogScreen(),
+              '/cek-pembayaran': (_) => const CekPembayaranScreen(),
             },
           );
         },
@@ -378,6 +351,7 @@ class _MainScreenState extends State<MainScreen> {
               ),
             PopupMenuButton<String>(
               icon: const Icon(Icons.more_vert),
+              tooltip: 'Menu Lainnya',
               onSelected: (value) {
                 switch (value) {
                   case 'akun':
@@ -398,27 +372,50 @@ class _MainScreenState extends State<MainScreen> {
                   case 'absensi':
                     Navigator.pushNamed(context, '/absensi');
                     break;
+                  case 'admin':
+                    Navigator.pushNamed(context, '/admin-kelola');
+                    break;
+                  case 'audit':
+                    Navigator.pushNamed(context, '/audit-log');
+                    break;
+                  case 'pembayaran_lain':
+                    Navigator.pushNamed(context, '/pembayaran-lain');
+                    break;
                   case 'logout':
                     auth.logout();
                     break;
                 }
               },
               itemBuilder: (_) => [
-                if (!isPengajar)
-                  const PopupMenuItem(
-                      value: 'absensi', child: Text('Absensi')),
-                if (!isPengajar && canManage)
-                  const PopupMenuItem(
-                      value: 'pengeluaran', child: Text('Pengeluaran')),
-                if (!isPengajar && canManage)
-                  const PopupMenuItem(value: 'saran', child: Text('Kotak Saran')),
+                // Common menus (shown based on permissions)
+                if (!isPengajar) ...[
+                  const PopupMenuItem(value: 'absensi', child: Text('Absensi')),
+                  if (canManage)
+                    const PopupMenuItem(value: 'pengeluaran', child: Text('Pengeluaran')),
+                  if (canManage)
+                    const PopupMenuItem(value: 'pembayaran_lain', child: Text('Pembayaran Lain')),
+                ],
+                
                 if (isPengajar || canManage)
                   const PopupMenuItem(value: 'laporan', child: Text('Laporan / Export')),
-                if (!isPengajar && canManage)
-                  const PopupMenuItem(
-                      value: 'pengaturan', child: Text('Pengaturan')),
+                
+                // Management menus
+                if (canManage) ...[
+                  if (!isPengajar)
+                    const PopupMenuItem(value: 'saran', child: Text('Kotak Saran')),
+                  const PopupMenuItem(value: 'pengaturan', child: Text('Pengaturan')),
+                ],
+
+                // Developer only menus
+                if (auth.user?.isDeveloper == true) ...[
+                  const PopupMenuItem(value: 'admin', child: Text('Kelola Admin')),
+                  const PopupMenuItem(value: 'audit', child: Text('Audit Log')),
+                ],
+
                 if (!isPengajar)
                   const PopupMenuItem(value: 'akun', child: Text('Akun')),
+
+                const PopupMenuDivider(),
                 const PopupMenuItem(
                   value: 'logout',
                   child: Text('Logout', style: TextStyle(color: Colors.red)),
